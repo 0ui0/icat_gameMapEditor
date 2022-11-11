@@ -1,0 +1,32 @@
+{
+  "name": "icat_gamemapeditor",
+  "version": "1.0.0",
+  "description": "A rpg-game map creater.",
+  "main": "serve.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "rpg",
+    "game",
+    "map",
+    "editor",
+    "creater",
+    "node",
+    "mithril"
+  ],
+  "author": "lambda",
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "@hapi/hapi": "^21.0.0",
+    "@hapi/inert": "^7.0.0",
+    "@hapi/vision": "^7.0.0",
+    "@icon-park/svg": "^1.4.2",
+    "html2canvas": "^1.4.1",
+    "icat_checktype": "^1.0.2",
+    "mithril": "^2.2.2",
+    "mithril-node-render": "^3.0.2",
+    "uuid": "^9.0.0",
+    "vite": "^3.2.3"
+  }
+}

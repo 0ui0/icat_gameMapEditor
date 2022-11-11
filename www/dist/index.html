@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <title>宅喵地图编辑器</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <style>
+        html {
+            font-size: 10px;
+            font-weight: 500;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        * {
+            font-size: 1.4rem;
+            font-family: 'Noto Sans SC', PingFangSC, PingFangSC-Regular, 'Microsoft YaHei', 微软雅黑, STXihei, 华文细黑, Georgia, 'Times New Roman', serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            position: relative;
+            overflow: auto;
+        }
+
+        #home {
+            height: 100%;
+            /*
+            background-image: url("./statics/zone_bg.jpg");
+            background-size: cover;
+            */
+        }
+
+        a {
+            text-decoration: none;
+            color: hsl(205, 100%, 50%)
+        }
+
+        a:hover {
+            color: hsl(200, 100%, 50%);
+            cursor: pointer;
+        }
+
+        @media only screen and (max-width : 768px) {
+            html {
+                font-size: 10px
+            }
+        }
+
+
+        @keyframes leftOrRight {
+            0% {
+                transform: rotate(0deg)
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes loading {
+            0% {
+                width: 2%
+            }
+
+            100% {
+                width: 100%
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdn.staticfile.org/animate.css/3.7.2/animate.min.css">
+  <script type="module" crossorigin src="/assets/main.js"></script>
+</head>
+
+<body>
+    <div style="height:100% !important" id="home">
+      
+    </div>
+</body>
+
+</html>
