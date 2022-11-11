@@ -6,10 +6,10 @@
 ![预览图](./preview.png)
 
 ## 必须准备的环境 Environment Preparation
-1. 安装[node.js](https://nodejs.org/en/)
+1. 安装 [node.js](https://nodejs.org/en/)
 2. 叮咚，没啦。
 ---
-1. install[node.js](https://nodejs.org/en/)
+1. install [node.js](https://nodejs.org/en/)
 2. DingDong,no another steps, that's Right!
 
 ## 开箱 Open Box
