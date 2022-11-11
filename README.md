@@ -39,11 +39,11 @@ It indicate run sucess, if you see the tips below:
 6. 在浏览器的地址栏输入默认访问地址：`http://localhost:8721`，即可看到我们的地图编辑器啦。注意此时不要关闭命令行窗口哦。
 Enter the url in your browser `http://localhost:8721`, yeah, it is our map editor! Be careful don't close the command window.
 
->【提示】常用命令参考和命令使用说明：
-1. 我要在哪里输入指令呢？
+## 【提示】常用命令参考和命令使用说明：
+> 我要在哪里输入指令呢？
 使用“win徽标键+R键”，可以打开“运行”对话框，在弹出的对话框内输入“cmd”，点击“确定”，就可以启动命令行工具啦。在命令行工具里，每输入完一个命令需要按回车（Enter）来执行。
 
-2. 学习使用进入文件件的`cd`命令
+> 学习使用进入文件件的`cd`命令
 在命令行界面，使用cd命令可以进入一个文件夹。格式为：`cd 文件夹或者目录路径`
 比如`cd d:\我下载的奇怪游戏`
 这就会进入到D盘下的【我下载的奇怪游戏】文件夹内，当然前提是有这个文件夹哈
@@ -54,13 +54,13 @@ Enter the url in your browser `http://localhost:8721`, yeah, it is our map edito
 那么，所谓cd，顾名思义：
 change directory = 切换目录
 
-3. 学习使用返回上级文件的`cd ..`命令
+> 学习使用返回上级文件的`cd ..`命令
 输入`cd ..`可以从当前目录返回上一级的目录，注意cd和点的中间有一个空格。
 
-4. 已经进入文件夹了，如何查看文件夹里的文件呢？
+> 已经进入文件夹了，如何查看文件夹里的文件呢？
 使用`dir`命令，可以列出当前目录下的文件列表，如果你使用linux，可以换成`ls`命令。
 
-5. 学习使用node命令。
+> 学习使用node命令。
 如果你已经成功安装完了nodejs，系统就会自动帮你安装上node命令和npm命令。这两个命令都可以在命令行工具内使用。
 那么，使用cd命令进入到你下载并解压的我们的项目目录内，例如：
 `cd d:/我的奇怪游戏/icat_gameMapEditor`
@@ -73,7 +73,7 @@ change directory = 切换目录
 对没错，根据前前前面的说明，我们就要用node执行它啦：
 `node serve.js`
 
-6. npm命令说明。
+> npm命令说明。
 npm是nodejs的包管理器，你可以理解为node程序的自动插件安装器。当我们执行`npm install`命令的时候，npm程序会自动根据当前文件夹里面的package.json文件记录的数据去安装当前项目所需的依赖插件。
 
 ## 功能说明 How to use?
