@@ -16,7 +16,7 @@
     "mithril"
   ],
   "author": "lambda",
-  "license": "GPL-3.0-or-later",
+  "license": "",
   "dependencies": {
     "@hapi/hapi": "^21.0.0",
     "@hapi/inert": "^7.0.0",
