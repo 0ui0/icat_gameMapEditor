@@ -18,6 +18,7 @@ export default function() {
     view: function() {
       return m("", {
         style: {
+          zIndex: 99999,
           position: "fixed",
           bottom: "2rem",
           left: "50%",

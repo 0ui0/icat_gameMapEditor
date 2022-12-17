@@ -23,6 +23,7 @@ export default ->
   view:->
     m "",
       style:
+        zIndex:99999
         position:"fixed"
         bottom:"2rem"
         left:"50%"
