@@ -84,6 +84,9 @@ export default {
           });
           return dom.addEventListener("mousedown",
       function(e1) {
+            if (e1.button !== 0) {
+              return;
+            }
             x1 = e1.offsetX;
             y1 = e1.offsetY;
             x2 = x1;
@@ -199,6 +202,7 @@ export default {
                 m.redraw()
               ,500
               */
+              console.log("已取消");
               document.removeEventListener("mousemove",
       fnMove);
               return document.removeEventListener("mouseup",

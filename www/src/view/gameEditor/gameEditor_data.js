@@ -7,6 +7,7 @@ export default {
   downkeys: [],
   leftWidth: "30",
   leftHeight: "40",
+  autoDrawSeletor: true,
   autoDrawNames: [
     {
       en: "crossBlock",
@@ -64,6 +65,23 @@ export default {
   clearAutoDrawConfig: function() {
     return this.autoDrawNames.forEach(({en, cn}) => {
       return this[en] = null;
+    });
+  },
+  autoDrawPlan: [],
+  presentPlan: 0,
+  saveAutoDrawPlan: function(name) {
+    return this.autoDrawPlan.push((function(obj) {
+      this.autoDrawNames.forEach(({en, cn}) => {
+        return obj[en] = {...this[en]};
+      });
+      return obj;
+    })({
+      name: name
+    }));
+  },
+  readAutoDrawPlan: function() {
+    return this.autoDrawNames.forEach(({en, cn}) => {
+      return this[en] = {...this.autoDrawPlan[this.presentPlan][en]};
     });
   },
   crossBlock: {
@@ -146,7 +164,7 @@ export default {
   autoDraw: false,
   tilesetUrl: "statics/green/tileset/tukuai.png",
   tileset: null,
-  tilesets: ["statics/green/tileset/01.png"],
+  tilesets: ["statics/green/tileset/tukuai.png"],
   canvasHeight: 1000,
   canvasWidth: 1000,
   mouseDirection: true,

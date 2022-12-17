@@ -8,6 +8,7 @@ export default
   leftWidth:"30"
   leftHeight:"40"
 
+  autoDrawSeletor:true
   autoDrawNames:[
     {en:"crossBlock",cn:"内块"}
     {en:"upEdge",cn:"上边"}
@@ -22,12 +23,25 @@ export default
     {en:"rightUpAngle2",cn:"右上交角"}
     {en:"leftDownAngle2",cn:"左下交角"}
     {en:"rightDownAngle2",cn:"右下交角"}
-  
   ]
 
   clearAutoDrawConfig:->
     @autoDrawNames.forEach ({en,cn})=>
       @[en] = null
+
+  autoDrawPlan:[]
+
+  presentPlan:0
+
+  saveAutoDrawPlan:(name)->
+    @autoDrawPlan.push do(obj = {name:name})->
+      @autoDrawNames.forEach ({en,cn})=>
+        obj[en] = {@[en]...}
+      return obj
+
+  readAutoDrawPlan:->
+    @autoDrawNames.forEach ({en,cn})=>
+      @[en] = {@autoDrawPlan[@presentPlan][en]...}
 
 
   crossBlock:
@@ -89,7 +103,7 @@ export default
   
   tileset:null
   tilesets:[
-    "statics/green/tileset/01.png"
+    "statics/green/tileset/tukuai.png"
   ]
 
   canvasHeight:1000

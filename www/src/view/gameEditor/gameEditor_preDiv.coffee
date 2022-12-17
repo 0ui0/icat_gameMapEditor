@@ -15,13 +15,19 @@ export default class
     url:""
     hasBorder:0
     zIndex:1
+    linkid:""
   })->
+    obj.id = uuid()
 
     for [key,value] in Object.entries obj
       @[key] = value
 
     if obj.divList
       @divList = obj.divList
+      
+  changeId:(newId)->
+    checkType arguments,["string"],"gameEditor.PreDiv.changeId()"
+    @id = newId
 
   del:->
     @divList.data = @divList.data.filter (preDiv)=>
@@ -45,6 +51,11 @@ export default class
     copyDiv.x += gEData.getW()
     copyDiv.y += gEData.getH()
     @divList.add copyDiv
+  linkTo:(linkid)->
+    checkType arguments,["string"],"gameEditor.PreDiv.linkTo()"
+    @linkid = linkid
+  
+
 
   
   

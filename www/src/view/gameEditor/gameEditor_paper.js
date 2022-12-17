@@ -14,8 +14,8 @@ import PreDiv from "./gameEditor_preDiv";
 import autoDraw from "./gameEditor_autoDraw";
 
 export default function() {
-  var fnDown1, fnDown1_move, fnDown1_up, fnDown2, fnDown2_move, fnDown2_up, fnMove, fnOut;
-  fnOut = fnDown1 = fnDown2 = fnMove = fnDown1_move = fnDown1_up = fnDown2_move = fnDown2_up = null;
+  var fnDown1, fnDown1_move, fnDown1_up, fnDown2, fnDown2_move, fnDown2_up, fnDown3, fnDown3_up, fnMove, fnOut;
+  fnOut = fnDown1 = fnDown2 = fnDown3 = fnMove = fnDown1_move = fnDown1_up = fnDown2_move = fnDown2_up = fnDown3_up = null;
   return {
     view: function() {
       return m("#paper", {
@@ -68,6 +68,9 @@ export default function() {
               if (!fnDown1) {
                 dom.addEventListener("mousedown", fnDown1 = function(e3) {
                   var preDiv, x3, y3;
+                  if (e3.button !== 0) {
+                    return;
+                  }
                   //console.log "down"
                   if (gEData.mouseState !== "pen") {
                     return;
@@ -147,8 +150,11 @@ export default function() {
               
               //框选器
               if (!fnDown2) {
-                return dom.addEventListener("mousedown", fnDown2 = function(e3) {
+                dom.addEventListener("mousedown", fnDown2 = function(e3) {
                   var domX, domY;
+                  if (e3.button !== 0) {
+                    return;
+                  }
                   if (gEData.mouseState !== "mouse") {
                     return;
                   }
@@ -201,23 +207,66 @@ export default function() {
                         fnDown2_up = document.removeEventListener("mouseup", fnDown2_up);
                         return;
                       }
-                      //console.log "鼠标抬起"
-                      gEData.divList.getInRect(gEData).forEach((preDiv) => {
-                        var group;
-                        group = gEData.divList.findInGroup(preDiv);
-                        //如果元素在组内，同时框选同组元素
-                        if (group != null) {
-                          group.forEach((preDiv1) => {
-                            return preDiv1.select(1);
-                          });
-                        }
-                        return preDiv.select(1);
-                      });
+                      gEData.divList.selectRectItems();
                       m.redraw();
                       fnDown2_move = document.removeEventListener("mousemove", fnDown2_move);
                       return fnDown2_up = document.removeEventListener("mouseup", fnDown2_up);
                     });
                   }
+                });
+              }
+              //右键
+              if (!fnDown3) {
+                return dom.addEventListener("contextmenu", fnDown3 = function(e) {
+                  if (gEData.mouseState !== "mouse") {
+                    return;
+                  }
+                  if (gEData.divList.getSelectedItems().length <= 0) {
+                    return;
+                  }
+                  gEData.RightMenu.data.show = true;
+                  gEData.rightMenuTop = e.clientY;
+                  gEData.rightMenuLeft = e.clientX;
+                  gEData.RightMenu.data.items = [
+                    {
+                      name: "上移一层",
+                      click: function() {
+                        return gEData.divList.changeZIndexSelectedItems(5);
+                      }
+                    },
+                    {
+                      name: "下移一层",
+                      click: function() {
+                        return gEData.divList.changeZIndexSelectedItems(-5);
+                      }
+                    },
+                    {
+                      name: "编组",
+                      click: function() {
+                        gEData.divList.becomeGroup();
+                        return gEData.RightMenu.data.show = false;
+                      }
+                    },
+                    {
+                      name: "拆散",
+                      click: function() {
+                        gEData.divList.exitGroup();
+                        return gEData.RightMenu.data.show = false;
+                      }
+                    },
+                    {
+                      name: "删除",
+                      click: function() {
+                        gEData.divList.delSelectedItems();
+                        gEData.RightMenu.data.show = false;
+                        return m.redraw();
+                      }
+                    }
+                  ];
+                  e.preventDefault();
+                  return m.redraw();
+                }, {
+                  passive: false
                 });
               }
             });
@@ -237,8 +286,11 @@ export default function() {
           return m("",
         {
             key: preDiv.id,
+            "data-id": preDiv.id,
+            "data-linkid": preDiv.linkid,
             oncreate: ({dom}) => {
               preDiv.dom = dom;
+              //右键菜单
               dom.addEventListener("contextmenu",
         function(e) {
                 gEData.RightMenu.data.show = true;
@@ -294,7 +346,10 @@ export default function() {
               });
               dom.addEventListener("dblclick",
         function(e) {
-                gEData.divList.groupLevel += 1;
+                if (preDiv.isGroup) {
+                  gEData.divList.setPresentGroup(preDiv.id);
+                  gEData.divList.cancelSelectAll();
+                }
                 return e.stopPropagation();
               },
         {
@@ -302,8 +357,7 @@ export default function() {
               });
               return dom.addEventListener("mousedown",
         function(e1) {
-                var fnClick,
-        fnUp,
+                var fnUp,
         ref,
         x1,
         y1;
@@ -311,7 +365,7 @@ export default function() {
                 x1 = e1.clientX;
                 y1 = e1.clientY;
                 gEData.RightMenu.data.show = false;
-                //框选
+                //框选shift追加或删除元素
                 if (gEData.downkeys[0] !== 16) { //shift键
                   //如果已经选中的方块里没有当前点击的方块，就
                   if (!gEData.divList.getSelectedItems().find((preDiv1) => {
@@ -334,15 +388,14 @@ export default function() {
                 gEData.choiseBox2.w = 0;
                 gEData.choiseBox2.h = 0;
                 m.redraw();
-                document.addEventListener("click",
-        fnClick = () => {
-                  gEData.divList.data.forEach((preDiv1) => {
-                    return preDiv1.cancelSelect();
-                  });
-                  m.redraw();
-                  return document.removeEventListener("click",
-        fnClick);
-                });
+                //点击document取消选中，不需要，因为同时触发了新的框选器
+                /*
+                document.addEventListener "click",fnClick = ()=>
+                  gEData.divList.data.forEach (preDiv1)=>
+                    preDiv1.cancelSelect()
+                  m.redraw()
+                  document.removeEventListener "click",fnClick
+                */
                 document.addEventListener("mousemove",
         fnMove = function(e2) {
                   var disX,
@@ -379,6 +432,7 @@ export default function() {
                     return preDiv.y = gEData.getBoxY(preDiv.y);
                   });
                   m.redraw();
+                  gEData.divList.record(); //存储记录
                   document.removeEventListener("mousemove",
         fnMove);
                   return document.removeEventListener("mouseup",
@@ -398,6 +452,7 @@ export default function() {
               left: 0,
               top: 0,
               display: "inline-block",
+              opacity: gEData.divList.isInGroup(preDiv) ? 1 : 0.5,
               //translate:"#{preDiv.x}px #{preDiv.y}px"
               transform: `translate(${preDiv.x}px,${preDiv.y}px)`,
               width: `${preDiv.imgW}px`,
@@ -406,10 +461,22 @@ export default function() {
               backgroundPosition: `-${preDiv.imgX}px -${preDiv.imgY}px`,
               backgroundRepeat: "no-repeat",
               boxSizing: "border-box",
-              pointerEvents: gEData.mouseState === "pen" ? "none" : void 0,
+              pointerEvents: gEData.mouseState === "pen" ? "none" : gEData.divList.isInGroup(preDiv) ? "auto" : "none",
               border: preDiv.hasBorder === 1 ? `0.2rem solid ${getColor("yellow").back}` : preDiv.hasBorder === 2 ? `0.2rem solid ${getColor("green").back}` : void 0
             }
-          });
+          },
+        [
+            gEData.divList.showZIndex ? m("",
+            {
+              style: {
+                color: "white",
+                fontSize: "1.3rem",
+                wordBreak: "break-all",
+                wordWrap: "overflow-wrap"
+              }
+            },
+            "层级：" + preDiv.zIndex) : void 0
+          ]);
         })
       ]);
     }

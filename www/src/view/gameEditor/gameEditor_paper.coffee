@@ -6,7 +6,7 @@ import PreDiv from "./gameEditor_preDiv"
 import autoDraw from "./gameEditor_autoDraw"
 
 export default ->
-  fnOut = fnDown1 = fnDown2 = fnMove = fnDown1_move = fnDown1_up = fnDown2_move = fnDown2_up = null
+  fnOut = fnDown1 = fnDown2 = fnDown3 = fnMove = fnDown1_move = fnDown1_up = fnDown2_move = fnDown2_up = fnDown3_up = null
   
   view:()->
     m "#paper",
@@ -57,6 +57,8 @@ export default ->
 
             unless fnDown1
               dom.addEventListener "mousedown",fnDown1 = (e3)->
+                if e3.button isnt 0
+                  return
                 #console.log "down"
                 if gEData.mouseState isnt "pen"
                   return
@@ -144,13 +146,14 @@ export default ->
             #框选器
             unless fnDown2
               dom.addEventListener "mousedown",fnDown2 = (e3)->
+                if e3.button isnt 0
+                  return
                 if gEData.mouseState isnt "mouse"
                   return
 
                 if gEData.downkeys[0] isnt 16 #shift键
                   gEData.divList.data.forEach (preDiv)=>
                     preDiv.cancelSelect()
-                
 
                 x1 = e3.clientX
                 y1 = e3.clientY
@@ -178,7 +181,6 @@ export default ->
                     disX = x2-x1
                     disY = y2-y1
 
-
                     if disX > 0
                       gEData.choiseBox2.x = x1 - domX
                       gEData.choiseBox2.w = Math.abs disX
@@ -192,8 +194,6 @@ export default ->
                       gEData.choiseBox2.y = y2 - domY
                       gEData.choiseBox2.h = Math.abs disY
 
-                    
-
 
                     m.redraw()
 
@@ -206,20 +206,67 @@ export default ->
                       fnDown2_up = document.removeEventListener "mouseup",fnDown2_up
                       return
 
-                    #console.log "鼠标抬起"
+                    gEData.divList.selectRectItems()
 
-                    gEData.divList.getInRect(gEData).forEach (preDiv)=>
-                      group = gEData.divList.findInGroup preDiv
-                      #如果元素在组内，同时框选同组元素
-                      group?.forEach (preDiv1)=>
-                        preDiv1.select 1
-                      preDiv.select 1
+                      
+
+
+
 
                     m.redraw()
 
                     fnDown2_move = document.removeEventListener "mousemove",fnDown2_move
                     fnDown2_up = document.removeEventListener "mouseup",fnDown2_up
 
+
+
+            #右键
+            unless fnDown3
+              dom.addEventListener "contextmenu",fnDown3 = (e)->
+                if gEData.mouseState isnt "mouse"
+                  return
+                if gEData.divList.getSelectedItems().length <=0
+                  return
+                gEData.RightMenu.data.show = true
+                gEData.rightMenuTop = e.clientY
+                gEData.rightMenuLeft = e.clientX
+                gEData.RightMenu.data.items = [
+                  {
+                    name:"上移一层"
+                    click:->
+                      gEData.divList.changeZIndexSelectedItems 5
+                  }
+                  {
+                    name:"下移一层"
+                    click:->
+                      gEData.divList.changeZIndexSelectedItems -5
+                  }
+                  {
+                    name:"编组"
+                    click:->
+                      gEData.divList.becomeGroup()
+                      gEData.RightMenu.data.show = false
+                  }
+                  {
+                    name:"拆散"
+                    click:->
+                      gEData.divList.exitGroup()
+                      gEData.RightMenu.data.show = false
+
+                  }
+                  {
+                    name:"删除"
+                    click:->
+                      gEData.divList.delSelectedItems()                
+                      gEData.RightMenu.data.show = false
+                      m.redraw()
+                  }
+                ]
+                e.preventDefault()
+                m.redraw()
+              ,
+                passive:false
+                
 
 
       style:
@@ -232,10 +279,14 @@ export default ->
     ,[
       
       gEData.divList.data.map  (preDiv,index)=>
+
         m "",
           key:preDiv.id
+          "data-id":preDiv.id
+          "data-linkid":preDiv.linkid
           oncreate:({dom})=>
             preDiv.dom = dom
+            #右键菜单
             dom.addEventListener "contextmenu",(e)->
               gEData.RightMenu.data.show = true
               gEData.rightMenuTop = e.clientY
@@ -282,7 +333,9 @@ export default ->
               passive:false
 
             dom.addEventListener "dblclick",(e)->
-              gEData.divList.groupLevel += 1
+              if preDiv.isGroup
+                gEData.divList.setPresentGroup preDiv.id
+                gEData.divList.cancelSelectAll()
               e.stopPropagation()
             ,
               passive:false
@@ -295,8 +348,7 @@ export default ->
 
               gEData.RightMenu.data.show = false
 
-              #框选
-            
+              #框选shift追加或删除元素
               if gEData.downkeys[0] isnt 16 #shift键
                 #如果已经选中的方块里没有当前点击的方块，就
                 unless gEData.divList.getSelectedItems().find (preDiv1)=> preDiv1 is preDiv
@@ -314,11 +366,15 @@ export default ->
               gEData.choiseBox2.h = 0
 
               m.redraw()
+
+              #点击document取消选中，不需要，因为同时触发了新的框选器
+              ###
               document.addEventListener "click",fnClick = ()=>
                 gEData.divList.data.forEach (preDiv1)=>
                   preDiv1.cancelSelect()
                 m.redraw()
                 document.removeEventListener "click",fnClick
+              ###
 
               document.addEventListener "mousemove",fnMove = (e2)->
                 e2.stopPropagation()
@@ -350,30 +406,56 @@ export default ->
 
                 m.redraw()
 
+                gEData.divList.record() #存储记录
+
                 document.removeEventListener "mousemove",fnMove
                 document.removeEventListener "mouseup",fnUp
               ,
                 passive:false
             ,
               passive:false
+          
           style:
             zIndex:preDiv.zIndex
             position:"absolute"
             left:0
             top:0
             display:"inline-block"
+            opacity:if gEData.divList.isInGroup(preDiv)
+              1
+            else
+              0.5
+
             #translate:"#{preDiv.x}px #{preDiv.y}px"
             transform:"translate(#{preDiv.x}px,#{preDiv.y}px)"
-            width:"#{preDiv.imgW}px"
+            width: "#{preDiv.imgW}px"
             height:"#{preDiv.imgH}px"
             backgroundImage:"url(#{preDiv.url})"
             backgroundPosition:"-#{preDiv.imgX}px -#{preDiv.imgY}px"
             backgroundRepeat:"no-repeat"
             boxSizing:"border-box"
-            pointerEvents: if gEData.mouseState is "pen" then "none" 
+            pointerEvents: if gEData.mouseState is "pen"
+              "none"
+            else
+              if gEData.divList.isInGroup(preDiv)
+                "auto"
+              else
+                "none"
+
             border:if preDiv.hasBorder is 1
               "0.2rem solid #{getColor("yellow").back}"
             else if preDiv.hasBorder is 2
               "0.2rem solid #{getColor("green").back}"
+
+        ,[
+          if gEData.divList.showZIndex
+            m "",
+              style:
+                color:"white"
+                fontSize:"1.3rem"
+                wordBreak:"break-all"
+                wordWrap:"overflow-wrap"
+            ,"层级："+preDiv.zIndex
+        ]
 
     ]

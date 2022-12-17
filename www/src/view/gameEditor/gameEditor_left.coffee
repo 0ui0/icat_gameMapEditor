@@ -69,6 +69,9 @@ export default
 
           dom.addEventListener "mousedown",(e1)->
 
+            if e1.button isnt 0
+              return
+
             x1 = e1.offsetX
             y1 = e1.offsetY
             x2 = x1
@@ -85,6 +88,7 @@ export default
             m.redraw()
 
             document.addEventListener "mousemove",fnMove = (e2)->
+
               e2.stopPropagation()
 
               isMoving = true
@@ -191,9 +195,11 @@ export default
                 m.redraw()
               ,500
               ###
-
+              console.log "已取消"
               document.removeEventListener "mousemove",fnMove
               document.removeEventListener "mouseup",fnUp
+
+              
 
 
             

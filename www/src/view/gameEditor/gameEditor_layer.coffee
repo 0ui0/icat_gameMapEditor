@@ -16,14 +16,7 @@ export default ->
             margin:"1rem"
             fontSize:"1.8rem"
             color:"#aaa"
-        ,"图层1"
-        m "",
-          style:
-            display:"inline-block"
-            margin:"1rem"
-            fontSize:"1.8rem"
-            color:"#aaa"
-        ,"图层2"
+        ,"图层"
       ]
 
       m "",

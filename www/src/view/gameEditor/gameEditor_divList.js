@@ -5,6 +5,8 @@ import PreDiv from "./gameEditor_preDiv";
 
 import gEData from "./gameEditor_data";
 
+import Notice from "../common/notice";
+
 import {
   v4 as uuid
 } from "uuid";
@@ -12,9 +14,15 @@ import {
 export default DivList = class {
   constructor(obj = {
       data: [],
+      historyDatas: [],
+      cursor: -1,
       groups: [],
       groupLevel: 0,
-      copy: []
+      copy: [],
+      group: [],
+      presentGroup: "",
+      showZIndex: false,
+      showZIndexTimer: null
     }) {
     var i, key, len, ref, value;
     ref = Object.entries(obj);
@@ -25,17 +33,67 @@ export default DivList = class {
   }
 
   findById(id) {
+    checkType(arguments, ["string"], "gameEditor.DivList.findById()");
     return this.data.find((preDiv) => {
       return preDiv.id === id;
     });
   }
 
-  add(preDiv) {
+  add(preDiv, noRecord) {
     if (!(preDiv instanceof PreDiv)) {
       throw new Error("添加的元素不是PreDiv的实例");
     }
     preDiv.divList = this;
-    return this.data.push(preDiv);
+    preDiv.zIndex = 1;
+    if (this.presentGroup) {
+      preDiv.linkid = this.presentGroup;
+    }
+    this.data.push(preDiv);
+    if (!noRecord) { //不要记录
+      return this.record();
+    }
+  }
+
+  record() {
+    var copyData, idMap;
+    if (this.historyDatas.length !== this.cursor + 1) {
+      this.historyDatas.length = this.cursor + 1;
+    }
+    copyData = this.data.map((preDiv) => {
+      return new PreDiv({...preDiv});
+    });
+    
+    //id映射
+    idMap = {};
+    this.data.forEach((preDiv, index) => {
+      return idMap[preDiv.id] = copyData[index].id;
+    });
+    //根据映射表修改linkid
+    copyData.forEach((preDiv, index) => {
+      return preDiv.linkid = idMap[preDiv.linkid] || "";
+    });
+    copyData.presentGroup = this.presentGroup;
+    this.historyDatas.push(copyData);
+    return this.cursor++;
+  }
+
+  undo() {
+    if (this.cursor - 1 > -1) {
+      this.cursor--;
+      this.data = [...this.historyDatas[this.cursor]];
+      return this.presentGroup = this.historyDatas[this.cursor].presentGroup;
+    } else {
+      this.data = [];
+      return this.cursor = -1;
+    }
+  }
+
+  redo() {
+    if (this.cursor + 1 <= this.historyDatas.length - 1) {
+      this.cursor++;
+      this.data = [...this.historyDatas[this.cursor]];
+      return this.presentGroup = this.historyDatas[this.cursor].presentGroup;
+    }
   }
 
   addNoRepeat(preDiv) {
@@ -80,42 +138,55 @@ export default DivList = class {
   }
 
   delSelectedItems() {
-    return this.getSelectedItems().forEach((preDiv) => {
+    this.getSelectedItems().forEach((preDiv) => {
       return preDiv.del();
     });
+    return this.record();
   }
 
   translateSelectedItems(deltaX, deltaY) {
     checkType(arguments, ["number", "number"], "gameEditor.DivList.translateSelectedItem()");
-    return this.getSelectedItems().forEach((preDiv) => {
+    this.getSelectedItems().forEach((preDiv) => {
       preDiv.x += deltaX;
       return preDiv.y += deltaY;
     });
+    return this.updateGroup();
   }
 
   setXYSelectedItems(x, y) {
     checkType(arguments, ["number", "number"], "gameEditor.DivList.translateSelectedItem()");
-    return this.getSelectedItems().forEach((preDiv) => {
+    this.getSelectedItems().forEach((preDiv) => {
       preDiv.x = x;
       return preDiv.y = y;
     });
+    return this.record();
   }
 
   changeZIndexSelectedItems(deltaZIndex) {
     checkType(arguments, ["number"], "gameEditor.DivList.changeZIndexSelectedItem()");
-    return this.getSelectedItems().forEach((preDiv) => {
-      return preDiv.zIndex += deltaZIndex;
+    this.showZIndex = true;
+    this.showZIndexTimer = clearTimeout(this.showZIndexTimer);
+    this.showZIndexTimer = setTimeout(() => {
+      this.showZIndex = false;
+      return m.redraw();
+    }, 1000);
+    this.getSelectedItems().forEach((preDiv) => {
+      if (preDiv.zIndex + deltaZIndex > 0) {
+        return preDiv.zIndex += deltaZIndex;
+      }
     });
+    return this.record();
   }
 
   resetZIndexSelectedItems(zIndex) {
     checkType(arguments, ["number"], "gameEditor.DivList.resetZIndexSelectedItem()");
-    return this.getSelectedItems().forEach((preDiv) => {
+    this.getSelectedItems().forEach((preDiv) => {
       return preDiv.zIndex = zIndex;
     });
+    return this.record();
   }
 
-  becomeGroup() {
+  becomeGroup_noUse() {
     var sameGroup, selectedItems;
     selectedItems = this.getSelectedItems();
     sameGroup = this.groups.find((group) => {
@@ -135,10 +206,11 @@ export default DivList = class {
     if (sameGroup) { //已经有相同的组，不需要再编组
       return;
     }
-    return this.groups.push(selectedItems);
+    this.groups.push(selectedItems);
+    return this.record();
   }
 
-  findInGroup(preDiv) {
+  findInGroup_noUse(preDiv) {
     var inGroups;
     if (!(preDiv instanceof PreDiv)) {
       throw new Error("要查找所属组的元素不是PreDiv的实例");
@@ -159,20 +231,21 @@ export default DivList = class {
     }
   }
 
-  exitGroup() {
-    return this.getSelectedItems().forEach((preDiv) => {
+  exitGroup_noUse() {
+    this.getSelectedItems().forEach((preDiv) => {
       var group, groupIndex;
       group = this.findInGroup(preDiv);
       groupIndex = this.groups.indexOf(group);
       return this.groups.splice(groupIndex, 1);
     });
+    return this.record();
   }
 
   getInRect(gEData) { //获取被框选元素
     checkType(arguments, ["object"], "DivList.getInRect()");
     return this.data.filter((preDiv) => {
       var ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7;
-      if ((((gEData.choiseBox2.x < (ref = preDiv.x) && ref < gEData.choiseBox2.x + gEData.choiseBox2.w)) && ((gEData.choiseBox2.y < (ref1 = preDiv.y) && ref1 < gEData.choiseBox2.y + gEData.choiseBox2.h))) || (((gEData.choiseBox2.x < (ref2 = preDiv.x + preDiv.w) && ref2 < gEData.choiseBox2.x + gEData.choiseBox2.w)) && ((gEData.choiseBox2.y < (ref3 = preDiv.y) && ref3 < gEData.choiseBox2.y + gEData.choiseBox2.h))) || (((gEData.choiseBox2.x < (ref4 = preDiv.x) && ref4 < gEData.choiseBox2.x + gEData.choiseBox2.w)) && ((gEData.choiseBox2.y < (ref5 = preDiv.y + preDiv.h) && ref5 < gEData.choiseBox2.y + gEData.choiseBox2.h))) || (((gEData.choiseBox2.x < (ref6 = preDiv.x + preDiv.w) && ref6 < gEData.choiseBox2.x + gEData.choiseBox2.w)) && ((gEData.choiseBox2.y < (ref7 = preDiv.y + preDiv.h) && ref7 < gEData.choiseBox2.y + gEData.choiseBox2.h)))) {
+      if ((((gEData.choiseBox2.x < (ref = preDiv.x) && ref < gEData.choiseBox2.x + gEData.choiseBox2.w)) && ((gEData.choiseBox2.y < (ref1 = preDiv.y) && ref1 < gEData.choiseBox2.y + gEData.choiseBox2.h))) || (((gEData.choiseBox2.x < (ref2 = preDiv.x + preDiv.imgW) && ref2 < gEData.choiseBox2.x + gEData.choiseBox2.w)) && ((gEData.choiseBox2.y < (ref3 = preDiv.y) && ref3 < gEData.choiseBox2.y + gEData.choiseBox2.h))) || (((gEData.choiseBox2.x < (ref4 = preDiv.x) && ref4 < gEData.choiseBox2.x + gEData.choiseBox2.w)) && ((gEData.choiseBox2.y < (ref5 = preDiv.y + preDiv.imgH) && ref5 < gEData.choiseBox2.y + gEData.choiseBox2.h))) || (((gEData.choiseBox2.x < (ref6 = preDiv.x + preDiv.imgW) && ref6 < gEData.choiseBox2.x + gEData.choiseBox2.w)) && ((gEData.choiseBox2.y < (ref7 = preDiv.y + preDiv.imgH) && ref7 < gEData.choiseBox2.y + gEData.choiseBox2.h)))) {
         return true;
       } else {
         return false;
@@ -180,43 +253,80 @@ export default DivList = class {
     });
   }
 
+  getInRect(gEData) { //获取被框选元素ai版本
+    checkType(arguments, ["object"], "DivList.getInRect()");
+    return this.data.filter((preDiv) => {
+      var x1, x2, y1, y2;
+      x1 = Math.max(gEData.choiseBox2.x, preDiv.x);
+      y1 = Math.max(gEData.choiseBox2.y, preDiv.y);
+      x2 = Math.min(gEData.choiseBox2.x + gEData.choiseBox2.w, preDiv.x + preDiv.imgW);
+      y2 = Math.min(gEData.choiseBox2.y + gEData.choiseBox2.h, preDiv.y + preDiv.imgH);
+      return x1 < x2 && y1 < y2;
+    });
+  }
+
+  selectRectItems() {
+    this.getInRect(gEData).forEach((preDiv) => {
+      if (this.presentGroup) {
+        if (preDiv.linkid === this.presentGroup) {
+          return preDiv.select(1);
+        } else {
+          return preDiv.cancelSelect();
+        }
+      } else {
+        if (!preDiv.linkid) {
+          return preDiv.select(1);
+        } else {
+          return preDiv.cancelSelect();
+        }
+      }
+    });
+    return this.getSelectedItems().forEach((preDiv) => {
+      var group;
+      group = this.findInGroup(preDiv);
+      return group != null ? group.forEach((preDiv1) => {
+        return preDiv1.select(2);
+      }) : void 0;
+    });
+  }
+
   copySelectedItems() {
+    var idMap;
+    idMap = {};
     this.copy = this.getSelectedItems().map((preDiv) => {
       var div;
-      preDiv.hasBorder = 0;
       div = new PreDiv({
         ...preDiv,
         x: preDiv.x + gEData.getW(),
         y: preDiv.y + gEData.getH(),
         id: uuid(),
-        hasBorder: 1
+        hasBorder: 1,
+        divList: this
       });
-      div.divList = this;
       return div;
     });
-    return console.log("copy", this.copy);
+    this.getSelectedItems().forEach((preDiv, index) => {
+      idMap[preDiv.id] = this.copy[index].id;
+      return preDiv.hasBorder = 0;
+    });
+    this.copy.forEach((preDiv) => {
+      return preDiv.linkid = idMap[preDiv.linkid] || "";
+    });
+    return this.copy;
   }
 
   pasteCopyedItems() {
-    this.copy = this.copy.map((preDiv) => {
-      var div;
-      preDiv.hasBorder = 0;
-      div = new PreDiv({
-        ...preDiv,
-        x: preDiv.x + gEData.getW(),
-        y: preDiv.y + gEData.getH(),
-        id: uuid(),
-        hasBorder: 1
-      });
-      div.divList = this;
-      return div;
-    });
     this.data = [...this.data, ...this.copy];
-    return console.log(this.data);
+    return this.record();
   }
 
   fillRect() {
     var allNum, i, j, preObjs, ref, ref1, tmp, xIndex, xNum, xRest, yIndex, yNum, yRest;
+    if (!gEData.choiseBox2.w || !gEData.choiseBox2.h || !gEData.choiseBox2.x || !gEData.choiseBox2.y) {
+      return Notice.launch({
+        msg: "请设置填充区域"
+      });
+    }
     this.data.forEach((item) => {
       return item.cancelSelect();
     });
@@ -248,7 +358,206 @@ export default DivList = class {
         this.add(new PreDiv(tmp));
       }
     }
-    return this.becomeGroup();
+    this.becomeGroup();
+    return this.record();
+  }
+
+  findChildren(id) {
+    var groups;
+    checkType(arguments, ["string"], "gameEditor.DivList.findChildren()");
+    return groups = this.data.filter((preDiv) => {
+      return preDiv.linkid === id;
+    });
+  }
+
+  findChildrenDeep(id, index = 0, childArr = []) {
+    var children;
+    checkType(arguments, ["string", "number?", "array?"], "gameEditor.DivList.findChildrenDeep()");
+    children = this.findChildren(id);
+    childArr.push(...children);
+    children.forEach((child) => {
+      return this.findChildrenDeep(child.id, index++, childArr);
+    });
+    if (childArr.length > 0) {
+      return childArr;
+    } else {
+      return null;
+    }
+  }
+
+  getGroups() {
+    return this.data.filter((preDiv) => {
+      return preDiv.isGroup;
+    });
+  }
+
+  updateGroup() { //根据子元素调整组边界
+    return this.getGroups().forEach((group) => {
+      var children, x, x1, y, y1, z;
+      children = this.findChildrenDeep(group.id);
+      x = y = x1 = y1 = z = 0;
+      children.forEach((child, index) => {
+        if (index === 0) {
+          x = child.x;
+          y = child.y;
+          x1 = child.x + child.imgW;
+          y1 = child.y + child.imgH;
+          z = child.zIndex;
+        }
+        x = child.x < x ? child.x : x;
+        y = child.y < y ? child.y : y;
+        x1 = child.x + child.imgW > x1 ? child.x + child.imgW : x1;
+        y1 = child.y + child.imgH > y1 ? child.y + child.imgH : y1;
+        return z = child.zIndex > z ? child.zIndex : z;
+      });
+      group.x = x;
+      group.y = y;
+      group.imgW = x1 - x;
+      group.imgH = y1 - y;
+      return group.zIndex = z + 1;
+    });
+  }
+
+  becomeGroup() {
+    var group, groupId, selectedItems;
+    selectedItems = this.getSelectedItems();
+    selectedItems = selectedItems.filter((preDiv) => {
+      if (this.presentGroup) {
+        return preDiv.linkid === this.presentGroup;
+      } else {
+        return !preDiv.linkid;
+      }
+    });
+    //beforeLinkid = selectedItems[0].linkid
+    groupId = uuid();
+    selectedItems.forEach((preDiv, index) => {
+      return preDiv.linkid = groupId;
+    });
+    group = new PreDiv({
+      id: groupId,
+      linkid: this.presentGroup || "",
+      isGroup: true,
+      x: 0,
+      y: 0,
+      imgX: 0,
+      imgY: 0,
+      zIndex: 99,
+      imgW: 0,
+      imgH: 0,
+      url: "",
+      hasBorder: 1
+    });
+    group.changeId(groupId);
+    this.add(group, true);
+    this.updateGroup();
+    return this.record();
+  }
+
+  findInGroup(preDiv) {
+    var fn, output;
+    if (!(preDiv instanceof PreDiv)) {
+      throw new Error("要查找所属组的元素不是PreDiv的实例");
+    }
+    output = [];
+    fn = (preDiv) => {
+      return this.data.forEach((item) => {
+        if (item.linkid === preDiv.id) { //and item.linkid isnt @presentGroup
+          fn(item);
+          return output.push(item);
+        }
+      });
+    };
+    fn(preDiv);
+    if (output.length > 0) {
+      return output;
+    } else {
+      return null;
+    }
+  }
+
+  setPresentGroup(groupId) {
+    checkType(arguments, ["string"], "gameEditor.DivList.setPresentGroup()");
+    return this.presentGroup = groupId;
+  }
+
+  cancelSelectAll() {
+    return this.data.forEach((preDiv) => {
+      return preDiv.cancelSelect();
+    });
+  }
+
+  isInGroup(preDiv) {
+    var ref;
+    if (this.presentGroup) {
+      if ((ref = gEData.divList.findChildrenDeep(gEData.divList.presentGroup)) != null ? ref.find((child) => {
+        return child.id === preDiv.id;
+      }) : void 0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return true;
+    }
+  }
+
+  exitGroup() {
+    return this.getSelectedItems().forEach((preDiv) => {
+      if (preDiv.isGroup) {
+        this.data.forEach((dataPreDiv) => {
+          if (dataPreDiv.linkid === preDiv.id) { //修改子元素指向
+            if (preDiv.linkid) {
+              return dataPreDiv.linkid = preDiv.linkid;
+            } else {
+              return dataPreDiv.linkid = "";
+            }
+          }
+        });
+        return preDiv.del(); //删除组
+      }
+    });
+  }
+
+  save() {}
+
+  load() {}
+
+  async export() {
+    var aDom, blob, canvas, ctx, divListOrder, i, len, preDiv;
+    canvas = document.createElement("canvas");
+    canvas.width = gEData.canvasWidth;
+    canvas.height = gEData.canvasHeight;
+    ctx = canvas.getContext("2d");
+    divListOrder = this.data.sort((x1, x2) => {
+      return Number(x1.dom.style.zIndex) - Number(x2.dom.style.zIndex);
+    });
+    for (i = 0, len = divListOrder.length; i < len; i++) {
+      preDiv = divListOrder[i];
+      await (async(preDiv) => {
+        var imgDom;
+        imgDom = (await new Promise((res, rej) => {
+          imgDom = new Image();
+          imgDom.src = preDiv.url;
+          return imgDom.onload = () => {
+            return res(imgDom);
+          };
+        }));
+        return ctx.drawImage(imgDom, preDiv.imgX, preDiv.imgY, preDiv.imgW, preDiv.imgH, preDiv.x, preDiv.y, preDiv.imgW, preDiv.imgH);
+      })(preDiv);
+    }
+    
+    //data = canvas.toDataURL "image/png"
+    blob = (await new Promise((res, rej) => {
+      return canvas.toBlob((blob) => {
+        return res(blob);
+      });
+    }));
+    aDom = document.createElement("a");
+    aDom.download = `map_${Date.now()}.png`;
+    aDom.href = window.URL.createObjectURL(blob);
+    document.body.appendChild(aDom);
+    aDom.click();
+    return aDom.remove();
   }
 
 };

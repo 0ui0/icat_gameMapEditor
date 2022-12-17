@@ -18,9 +18,11 @@ export default (class {
       imgH: gEData.getH(),
       url: "",
       hasBorder: 0,
-      zIndex: 1
+      zIndex: 1,
+      linkid: ""
     }) {
     var i, key, len, ref, value;
+    obj.id = uuid();
     ref = Object.entries(obj);
     for (i = 0, len = ref.length; i < len; i++) {
       [key, value] = ref[i];
@@ -29,6 +31,11 @@ export default (class {
     if (obj.divList) {
       this.divList = obj.divList;
     }
+  }
+
+  changeId(newId) {
+    checkType(arguments, ["string"], "gameEditor.PreDiv.changeId()");
+    return this.id = newId;
   }
 
   del() {
@@ -65,6 +72,11 @@ export default (class {
     copyDiv.x += gEData.getW();
     copyDiv.y += gEData.getH();
     return this.divList.add(copyDiv);
+  }
+
+  linkTo(linkid) {
+    checkType(arguments, ["string"], "gameEditor.PreDiv.linkTo()");
+    return this.linkid = linkid;
   }
 
 });
