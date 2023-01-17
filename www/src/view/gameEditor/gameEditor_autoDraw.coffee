@@ -3,6 +3,7 @@ import PreDiv from "./gameEditor_preDiv"
 import {v4 as uuid} from "uuid"
 
 export default (x3,y3,x4,y4,notMove)->
+
   autoDivs = gEData.divList.data.filter (preDiv)=>
     return preDiv.autoType
 
@@ -57,15 +58,16 @@ export default (x3,y3,x4,y4,notMove)->
         autoType:partObj.type
         autoMain:if num is 1 then true else false
 
-    mainDivs = gEData.divList.data.filter (preDiv)=> preDiv.autoMain and not gEData.divList.findInGroup(preDiv)
+    mainDivs = gEData.divList.data.filter (preDiv)=>
+      preDiv.autoMain and (not preDiv.linkid or preDiv.linkid is gEData.divList.presentGroup)
 
     findDiv = ({x,y})=>
       gEData.divList.data.find (preDiv)=>
-        preDiv.autoType and preDiv.x is x and preDiv.y is y and not gEData.divList.findInGroup(preDiv)
+        preDiv.autoType and preDiv.x is x and preDiv.y is y and (not preDiv.linkid or preDiv.linkid is gEData.divList.presentGroup)
 
     findDivRotate = ({x,y})=>
       gEData.divList.data.find (preDiv)=>
-        preDiv.autoType and preDiv.rotateX is x and preDiv.rotateY is y and not gEData.divList.findInGroup(preDiv)
+        preDiv.autoType and preDiv.rotateX is x and preDiv.rotateY is y and (not preDiv.linkid or preDiv.linkid is gEData.divList.presentGroup)
     
     checkAndChange = (preDiv,part = null)->
       part = new Part preDiv
@@ -162,6 +164,7 @@ export default (x3,y3,x4,y4,notMove)->
             nine_[3].imgY = gEData[upEdge].y
             console.log 1.2
       ###
+
       if nine[3]
         if dir[1] and dir[2] and dir[6]
           nine[3].imgX = gEData["crossBlock"].x

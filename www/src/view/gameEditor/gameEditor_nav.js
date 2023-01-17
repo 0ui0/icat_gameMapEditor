@@ -67,6 +67,20 @@ urlList = [
     power: 1
   },
   {
+    name: "存档",
+    url: "#",
+    icon: "save",
+    sizeRate: 1,
+    power: 1
+  },
+  {
+    name: "导入",
+    url: "#",
+    icon: "import",
+    sizeRate: 1,
+    power: 1
+  },
+  {
     name: "撤销",
     url: "#",
     icon: "undo",
@@ -330,6 +344,10 @@ export default {
                             return gEData.divList.redo();
                           case "自动元件":
                             return gEData.autoDraw = !gEData.autoDraw;
+                          case "存档":
+                            return gEData.divList.save();
+                          case "导入":
+                            return gEData.divList.import();
                         }
                       }
                     }),

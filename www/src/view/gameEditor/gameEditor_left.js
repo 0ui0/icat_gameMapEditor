@@ -240,7 +240,6 @@ export default {
           }
         })
       ]),
-      
       //transition:"0.2s all"
       m("",
       {
@@ -305,6 +304,19 @@ export default {
           },
           "添加素材")
         ]),
+        m(Box,
+        {
+          isBtn: true,
+          color: "red",
+          style: {
+            maginTop: 0,
+            borderRadius: "0 0 1rem 1rem"
+          },
+          onclick: () => {
+            return gEData.tilesetUrl = "./statics/green/tileset/prohibit.png";
+          }
+        },
+        "通行"),
         gEData.tilesets.map((tileset,
         index) => {
           return m(Box,

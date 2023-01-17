@@ -44,7 +44,7 @@ export default DivList = class {
       throw new Error("添加的元素不是PreDiv的实例");
     }
     preDiv.divList = this;
-    preDiv.zIndex = 1;
+    preDiv.zIndex = this.data.length;
     if (this.presentGroup) {
       preDiv.linkid = this.presentGroup;
     }
@@ -110,7 +110,7 @@ export default DivList = class {
       throw new Error("添加的元素不是PreDiv的实例");
     }
     if (!(this.data.find((item) => {
-      return preDiv.x === item.x && preDiv.y === item.y && !this.findInGroup(item);
+      return preDiv.x === item.x && preDiv.y === item.y && (!item.linkid || item.linkid === this.presentGroup);
     }))) {
       return this.add(preDiv);
     }
@@ -133,7 +133,13 @@ export default DivList = class {
 
   getSelectedItems() {
     return this.data.filter((preDiv) => {
-      return preDiv.hasBorder;
+      return preDiv.hasBorder && !preDiv.hideState && !preDiv.lockState;
+    });
+  }
+
+  getCheckedItems() {
+    return this.data.filter((preDiv) => {
+      return preDiv.checked;
     });
   }
 
@@ -146,13 +152,13 @@ export default DivList = class {
 
   translateSelectedItems(deltaX, deltaY) {
     checkType(arguments, ["number", "number"], "gameEditor.DivList.translateSelectedItem()");
-    this.getSelectedItems().forEach((preDiv) => {
+    return this.getSelectedItems().forEach((preDiv) => {
       preDiv.x += deltaX;
       return preDiv.y += deltaY;
     });
-    return this.updateGroup();
   }
 
+  //@updateGroup() #太卡了，剪切到到移动结束部分运行
   setXYSelectedItems(x, y) {
     checkType(arguments, ["number", "number"], "gameEditor.DivList.translateSelectedItem()");
     this.getSelectedItems().forEach((preDiv) => {
@@ -267,6 +273,9 @@ export default DivList = class {
 
   selectRectItems() {
     this.getInRect(gEData).forEach((preDiv) => {
+      if (preDiv.lockState || preDiv.hideState) {
+        return preDiv.cancelSelect();
+      }
       if (this.presentGroup) {
         if (preDiv.linkid === this.presentGroup) {
           return preDiv.select(1);
@@ -480,6 +489,22 @@ export default DivList = class {
     return this.presentGroup = groupId;
   }
 
+  checkInPresentGroup(preDiv) {
+    if (this.presentGroup === "") {
+      if (!preDiv.linkid) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      if ((preDiv.linkid != null) === this.presentGroup) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }
+
   cancelSelectAll() {
     return this.data.forEach((preDiv) => {
       return preDiv.cancelSelect();
@@ -518,46 +543,182 @@ export default DivList = class {
     });
   }
 
-  save() {}
-
-  load() {}
-
-  async export() {
-    var aDom, blob, canvas, ctx, divListOrder, i, len, preDiv;
-    canvas = document.createElement("canvas");
-    canvas.width = gEData.canvasWidth;
-    canvas.height = gEData.canvasHeight;
-    ctx = canvas.getContext("2d");
-    divListOrder = this.data.sort((x1, x2) => {
-      return Number(x1.dom.style.zIndex) - Number(x2.dom.style.zIndex);
+  hideOrShow() {
+    this.getSelectedItems().forEach((preDiv) => {
+      return preDiv.hideOrShow();
     });
-    for (i = 0, len = divListOrder.length; i < len; i++) {
-      preDiv = divListOrder[i];
-      await (async(preDiv) => {
-        var imgDom;
-        imgDom = (await new Promise((res, rej) => {
-          imgDom = new Image();
-          imgDom.src = preDiv.url;
-          return imgDom.onload = () => {
-            return res(imgDom);
-          };
-        }));
-        return ctx.drawImage(imgDom, preDiv.imgX, preDiv.imgY, preDiv.imgW, preDiv.imgH, preDiv.x, preDiv.y, preDiv.imgW, preDiv.imgH);
-      })(preDiv);
-    }
-    
-    //data = canvas.toDataURL "image/png"
-    blob = (await new Promise((res, rej) => {
-      return canvas.toBlob((blob) => {
-        return res(blob);
-      });
-    }));
+    return this.record();
+  }
+
+  lockOrUnlock() {
+    this.getSelectedItems().forEach((preDiv) => {
+      return preDiv.lockOrUnlock();
+    });
+    return this.record();
+  }
+
+  hide() {
+    this.getSelectedItems().forEach((preDiv) => {
+      return preDiv.hide();
+    });
+    return this.record();
+  }
+
+  show() {
+    this.getSelectedItems().forEach((preDiv) => {
+      return preDiv.show();
+    });
+    return this.record();
+  }
+
+  lock() {
+    this.getSelectedItems().forEach((preDiv) => {
+      return preDiv.lock();
+    });
+    return this.record();
+  }
+
+  unlock() {
+    this.getSelectedItems().forEach((preDiv) => {
+      return preDiv.unlock();
+    });
+    return this.record();
+  }
+
+  hideOrShowCheckedItems() {
+    this.getCheckedItems().forEach((preDiv) => {
+      return preDiv.hideOrShow();
+    });
+    return this.record();
+  }
+
+  lockOrUnlockCheckedItems() {
+    this.getCheckedItems().forEach((preDiv) => {
+      return preDiv.lockOrUnlock();
+    });
+    return this.record();
+  }
+
+  save() {
+    var aDom, blob, copyData, json;
+    copyData = [];
+    this.data.forEach((preDiv) => {
+      var cpPreDiv;
+      cpPreDiv = {...preDiv};
+      delete cpPreDiv.divList;
+      delete cpPreDiv.dom;
+      return copyData.push(cpPreDiv);
+    });
+    json = JSON.stringify(copyData);
+    blob = new Blob([json]);
     aDom = document.createElement("a");
-    aDom.download = `map_${Date.now()}.png`;
+    aDom.download = `data_${Date.now()}.json`;
     aDom.href = window.URL.createObjectURL(blob);
     document.body.appendChild(aDom);
     aDom.click();
     return aDom.remove();
+  }
+
+  import() {
+    var json;
+    json = null;
+    return Notice.launch({
+      tip: "请选择“.json”格式的数据文件",
+      content: function() {
+        return {
+          view: function() {
+            return m("", [
+              m("input[type=file][accept=.json]",
+              {
+                onchange: async(e) => {
+                  var data,
+              err,
+              file,
+              ref;
+                  try {
+                    file = e.target.files[0];
+                    data = (await new Promise((res,
+              rej) => {
+                      var reader;
+                      reader = new FileReader();
+                      reader.onload = function() {
+                        return res(reader.result);
+                      };
+                      return reader.readAsText(file);
+                    }));
+                    json = JSON.parse(data);
+                    if (!((ref = json[0]) != null ? ref.id : void 0)) {
+                      throw new Error();
+                    }
+                  } catch (error) {
+                    err = error;
+                    console.log(err);
+                    return Notice.launch({
+                      msg: "导入失败，未知错误"
+                    });
+                  }
+                }
+              })
+            ]);
+          }
+        };
+      },
+      confirm: () => {
+        this.data = json.map((preDiv) => {
+          return new PreDiv({...preDiv});
+        });
+        this.record();
+        return void 0;
+      }
+    });
+  }
+
+  async export() {
+    var aDom, blob, canvas, ctx, divListOrder, err, i, len, preDiv;
+    try {
+      canvas = document.createElement("canvas");
+      canvas.width = gEData.canvasWidth;
+      canvas.height = gEData.canvasHeight;
+      ctx = canvas.getContext("2d");
+      divListOrder = this.data.sort((x1, x2) => {
+        return Number(x1.dom.style.zIndex) - Number(x2.dom.style.zIndex);
+      });
+      for (i = 0, len = divListOrder.length; i < len; i++) {
+        preDiv = divListOrder[i];
+        await (async(preDiv) => {
+          var imgDom;
+          if (!preDiv.hideState) {
+            imgDom = (await new Promise((res, rej) => {
+              imgDom = new Image();
+              imgDom.src = preDiv.url;
+              imgDom.onload = () => {
+                return res(imgDom);
+              };
+              return imgDom.onerror = (err) => {
+                return res(imgDom);
+              };
+            }));
+            return ctx.drawImage(imgDom, preDiv.imgX, preDiv.imgY, preDiv.imgW, preDiv.imgH, preDiv.x, preDiv.y, preDiv.imgW, preDiv.imgH);
+          }
+        })(preDiv);
+      }
+      
+      //data = canvas.toDataURL "image/png"
+      blob = (await new Promise((res, rej) => {
+        return canvas.toBlob((blob) => {
+          return res(blob);
+        });
+      }));
+      aDom = document.createElement("a");
+      aDom.download = `map_${Date.now()}.png`;
+      aDom.href = window.URL.createObjectURL(blob);
+      document.body.appendChild(aDom);
+      aDom.click();
+      return aDom.remove();
+    } catch (error) {
+      err = error;
+      return console.log(err);
+    }
   }
 
 };

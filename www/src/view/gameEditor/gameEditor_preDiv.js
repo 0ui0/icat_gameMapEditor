@@ -19,7 +19,10 @@ export default (class {
       url: "",
       hasBorder: 0,
       zIndex: 1,
-      linkid: ""
+      linkid: "",
+      hideState: false,
+      lockState: false,
+      checked: false
     }) {
     var i, key, len, ref, value;
     obj.id = uuid();
@@ -77,6 +80,42 @@ export default (class {
   linkTo(linkid) {
     checkType(arguments, ["string"], "gameEditor.PreDiv.linkTo()");
     return this.linkid = linkid;
+  }
+
+  hide() {
+    return this.hideState = true;
+  }
+
+  show() {
+    return this.hideState = false;
+  }
+
+  lock() {
+    return this.lockState = true;
+  }
+
+  unlock() {
+    return this.lockState = false;
+  }
+
+  hideOrShow() {
+    return this.hideState = !this.hideState;
+  }
+
+  lockOrUnlock() {
+    return this.lockState = !this.lockState;
+  }
+
+  check() {
+    return this.checked = true;
+  }
+
+  unCheck() {
+    return this.checked = false;
+  }
+
+  inverse() {
+    return this.checked = !this.checked;
   }
 
 });

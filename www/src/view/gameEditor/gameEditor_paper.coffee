@@ -261,6 +261,16 @@ export default ->
                       gEData.RightMenu.data.show = false
                       m.redraw()
                   }
+                  {
+                    name:"隐藏/显示"
+                    click:->
+                      gEData.divList.hideOrShow()
+                  }
+                  {
+                    name:"锁定/解锁"
+                    click:->
+                      gEData.divList.lockOrUnlock()
+                  }
                 ]
                 e.preventDefault()
                 m.redraw()
@@ -287,6 +297,7 @@ export default ->
           oncreate:({dom})=>
             preDiv.dom = dom
             #右键菜单
+            ###
             dom.addEventListener "contextmenu",(e)->
               gEData.RightMenu.data.show = true
               gEData.rightMenuTop = e.clientY
@@ -322,10 +333,21 @@ export default ->
                     gEData.RightMenu.data.show = false
                     m.redraw()
                 }
+                {
+                  name:"隐藏/显示"
+                  click:->
+                    gEData.divList.hideOrShow()
+                }
+                {
+                  name:"锁定/解锁"
+                  click:->
+                    gEData.divList.lockOrUnlock()
+                }
               ]
               e.preventDefault()
             ,
               passive:false
+            ###
 
             dom.addEventListener "click",(e)->
               e.stopPropagation()
@@ -404,8 +426,10 @@ export default ->
                   preDiv.x = gEData.getBoxX(preDiv.x)
                   preDiv.y = gEData.getBoxY(preDiv.y)
 
-                m.redraw()
+                
 
+                gEData.divList.updateGroup() #更新组
+                m.redraw()
                 gEData.divList.record() #存储记录
 
                 document.removeEventListener "mousemove",fnMove
@@ -421,10 +445,15 @@ export default ->
             left:0
             top:0
             display:"inline-block"
-            opacity:if gEData.divList.isInGroup(preDiv)
-              1
+            opacity:if preDiv.hideState
+              "0.2"
+            else if preDiv.lockState
+              "0.8"
             else
-              0.5
+              if gEData.divList.isInGroup(preDiv)
+                1
+              else
+                0.5
 
             #translate:"#{preDiv.x}px #{preDiv.y}px"
             transform:"translate(#{preDiv.x}px,#{preDiv.y}px)"
@@ -437,11 +466,14 @@ export default ->
             pointerEvents: if gEData.mouseState is "pen"
               "none"
             else
-              if gEData.divList.isInGroup(preDiv)
-                "auto"
-              else
+              if preDiv.lockState or preDiv.hideState
                 "none"
-
+              else
+                if gEData.divList.isInGroup(preDiv)
+                  "auto"
+                else
+                  "none"
+            userSelect:"none"
             border:if preDiv.hasBorder is 1
               "0.2rem solid #{getColor("yellow").back}"
             else if preDiv.hasBorder is 2

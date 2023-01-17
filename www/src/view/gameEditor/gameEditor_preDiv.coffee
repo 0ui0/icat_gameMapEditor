@@ -16,6 +16,9 @@ export default class
     hasBorder:0
     zIndex:1
     linkid:""
+    hideState:false
+    lockState:false
+    checked:false
   })->
     obj.id = uuid()
 
@@ -54,6 +57,27 @@ export default class
   linkTo:(linkid)->
     checkType arguments,["string"],"gameEditor.PreDiv.linkTo()"
     @linkid = linkid
+
+  hide:()->
+    @hideState = true
+  show:()->
+    @hideState = false
+  lock:()->
+    @lockState = true
+  unlock:()->
+    @lockState = false
+  hideOrShow:->
+    @hideState = not @hideState
+  lockOrUnlock:->
+    @lockState = not @lockState
+    
+  check:->
+    @checked = true
+  unCheck:->
+    @checked = false
+  inverse:->
+    @checked = not @checked
+  
   
 
 

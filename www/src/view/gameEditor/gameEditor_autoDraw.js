@@ -146,16 +146,16 @@ export default function(x3, y3, x4, y4, notMove) {
       }));
     });
     mainDivs = gEData.divList.data.filter((preDiv) => {
-      return preDiv.autoMain && !gEData.divList.findInGroup(preDiv);
+      return preDiv.autoMain && (!preDiv.linkid || preDiv.linkid === gEData.divList.presentGroup);
     });
     findDiv = ({x, y}) => {
       return gEData.divList.data.find((preDiv) => {
-        return preDiv.autoType && preDiv.x === x && preDiv.y === y && !gEData.divList.findInGroup(preDiv);
+        return preDiv.autoType && preDiv.x === x && preDiv.y === y && (!preDiv.linkid || preDiv.linkid === gEData.divList.presentGroup);
       });
     };
     findDivRotate = ({x, y}) => {
       return gEData.divList.data.find((preDiv) => {
-        return preDiv.autoType && preDiv.rotateX === x && preDiv.rotateY === y && !gEData.divList.findInGroup(preDiv);
+        return preDiv.autoType && preDiv.rotateX === x && preDiv.rotateY === y && (!preDiv.linkid || preDiv.linkid === gEData.divList.presentGroup);
       });
     };
     checkAndChange = function(preDiv, part = null) {

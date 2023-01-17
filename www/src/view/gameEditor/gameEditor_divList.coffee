@@ -28,7 +28,7 @@ export default DivList = class
     unless preDiv instanceof PreDiv
       throw new Error "添加的元素不是PreDiv的实例"
     preDiv.divList = @
-    preDiv.zIndex = 1
+    preDiv.zIndex = @data.length
     if @presentGroup
       preDiv.linkid = @presentGroup 
     @data.push preDiv
@@ -80,15 +80,14 @@ export default DivList = class
       throw new Error "添加的元素不是PreDiv的实例"
     unless @checkSameSiteRepeat preDiv
       @add preDiv
+
   addNoRepeatAutoDraw:(preDiv)->
     unless preDiv instanceof PreDiv
       throw new Error "添加的元素不是PreDiv的实例"
 
 
     unless (@data.find (item)=>
-      preDiv.x is item.x and
-      preDiv.y is item.y and
-      not @findInGroup item
+      preDiv.x is item.x and preDiv.y is item.y and (not item.linkid or item.linkid is @presentGroup)
     )
       @add preDiv
     
@@ -111,7 +110,9 @@ export default DivList = class
       null
 
   getSelectedItems:->
-    @data.filter (preDiv)=> preDiv.hasBorder
+    @data.filter (preDiv)=> preDiv.hasBorder and !preDiv.hideState and !preDiv.lockState
+  getCheckedItems:->
+    @data.filter (preDiv)=> preDiv.checked
 
   delSelectedItems:->
     @getSelectedItems().forEach (preDiv)=>
@@ -123,7 +124,7 @@ export default DivList = class
     @getSelectedItems().forEach (preDiv)=>
       preDiv.x += deltaX
       preDiv.y += deltaY
-    @updateGroup()
+    #@updateGroup() #太卡了，剪切到到移动结束部分运行
 
   setXYSelectedItems:(x,y)->
     checkType arguments,["number","number"],"gameEditor.DivList.translateSelectedItem()"
@@ -217,8 +218,11 @@ export default DivList = class
       return x1 < x2 && y1 < y2
 
   selectRectItems:->
-
+  
     @getInRect(gEData).forEach (preDiv)=>
+      if preDiv.lockState or preDiv.hideState
+        return preDiv.cancelSelect()
+    
       if @presentGroup
         if preDiv.linkid is @presentGroup
           preDiv.select 1
@@ -407,6 +411,18 @@ export default DivList = class
     checkType arguments,["string"],"gameEditor.DivList.setPresentGroup()"
     @presentGroup = groupId
 
+  checkInPresentGroup:(preDiv)->
+    if @presentGroup is ""
+      unless preDiv.linkid
+        return true
+      else
+        return false
+    else
+      if preDiv.linkid? is @presentGroup
+        return true
+      else
+        return false
+
   cancelSelectAll:->
     @data.forEach (preDiv)=>
       preDiv.cancelSelect()
@@ -431,39 +447,131 @@ export default DivList = class
               dataPreDiv.linkid = ""
         preDiv.del() #删除组
 
-  save:->
+  hideOrShow:->
+    @getSelectedItems().forEach (preDiv)=>
+      preDiv.hideOrShow()
+    @record()
+  lockOrUnlock:->
+    @getSelectedItems().forEach (preDiv)=>
+      preDiv.lockOrUnlock()
+    @record()
+  hide:->
+    @getSelectedItems().forEach (preDiv)=>
+      preDiv.hide()
+    @record()
+  show:->
+    @getSelectedItems().forEach (preDiv)=>
+      preDiv.show()
+    @record()
+  lock:->
+    @getSelectedItems().forEach (preDiv)=>
+      preDiv.lock()
+    @record()
+  unlock:->
+    @getSelectedItems().forEach (preDiv)=>
+      preDiv.unlock()
+    @record()
   
-  load:()->
+  hideOrShowCheckedItems:->
+    @getCheckedItems().forEach (preDiv)=>
+      preDiv.hideOrShow()
+    @record()
+  lockOrUnlockCheckedItems:->
+    @getCheckedItems().forEach (preDiv)=>
+      preDiv.lockOrUnlock()
+    @record()
+  
 
-  export:->
-    canvas = document.createElement "canvas"
-    canvas.width = gEData.canvasWidth
-    canvas.height = gEData.canvasHeight
-    ctx = canvas.getContext "2d"
+  save:->
+    copyData = []
+    @data.forEach (preDiv)=>
+      cpPreDiv = {preDiv...}
+      delete cpPreDiv.divList
+      delete cpPreDiv.dom
+      copyData.push cpPreDiv
+    json = JSON.stringify copyData
+    blob = new Blob [json]
 
-    divListOrder = @data.sort (x1,x2)=> Number(x1.dom.style.zIndex) - Number(x2.dom.style.zIndex) 
-
-    for preDiv in divListOrder
-      await do(preDiv)=>
-        imgDom = await new Promise (res,rej)=>
-          imgDom = new Image()
-          imgDom.src = preDiv.url
-          imgDom.onload = () =>
-            res(imgDom)
-
-        ctx.drawImage imgDom,preDiv.imgX,preDiv.imgY,preDiv.imgW,preDiv.imgH,preDiv.x,preDiv.y,preDiv.imgW,preDiv.imgH
-    
-    #data = canvas.toDataURL "image/png"
-    blob = await new Promise (res,rej)=>
-      canvas.toBlob (blob)=>
-        res(blob)
-    
     aDom = document.createElement "a"
-    aDom.download = "map_#{Date.now()}.png"
+    aDom.download = "data_#{Date.now()}.json"
     aDom.href = window.URL.createObjectURL blob
     document.body.appendChild aDom
     aDom.click()
     aDom.remove()
+    
+  
+  import:()->
+    json = null
+    Notice.launch
+      tip:"请选择“.json”格式的数据文件"
+      content:->
+        view:->
+          m "",[
+            m "input[type=file][accept=.json]",
+              onchange:(e)=>
+                try
+                  file = e.target.files[0]
+                  data = await new Promise (res,rej)=>
+                    reader = new FileReader()
+                    reader.onload = ()->
+                      res(reader.result)
+                    reader.readAsText(file)
+                  json = JSON.parse data
+                  unless json[0]?.id
+                    throw new Error()
+                catch err
+                  console.log err
+                  Notice.launch
+                    msg:"导入失败，未知错误"
+
+          ]
+        
+      confirm:=>
+        @data = json.map (preDiv)=>
+          new PreDiv {
+            preDiv...
+          }
+        @record()
+        return undefined
+
+  export:->
+
+    try
+      canvas = document.createElement "canvas"
+      canvas.width = gEData.canvasWidth
+      canvas.height = gEData.canvasHeight
+      ctx = canvas.getContext "2d"
+
+      divListOrder = @data.sort (x1,x2)=> 
+        Number(x1.dom.style.zIndex) - Number(x2.dom.style.zIndex) 
+
+      for preDiv in divListOrder
+        await do(preDiv)=>
+          unless preDiv.hideState
+            imgDom = await new Promise (res,rej)=>
+              imgDom = new Image()
+              imgDom.src = preDiv.url
+              imgDom.onload = () =>
+                res imgDom
+              imgDom.onerror = (err)=>
+                res imgDom
+            
+
+            ctx.drawImage imgDom,preDiv.imgX,preDiv.imgY,preDiv.imgW,preDiv.imgH,preDiv.x,preDiv.y,preDiv.imgW,preDiv.imgH
+      
+      #data = canvas.toDataURL "image/png"
+      blob = await new Promise (res,rej)=>
+        canvas.toBlob (blob)=>
+          res(blob)
+      
+      aDom = document.createElement "a"
+      aDom.download = "map_#{Date.now()}.png"
+      aDom.href = window.URL.createObjectURL blob
+      document.body.appendChild aDom
+      aDom.click()
+      aDom.remove()
+    catch err
+      console.log err
 
 
 

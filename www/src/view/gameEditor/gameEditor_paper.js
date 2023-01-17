@@ -261,6 +261,18 @@ export default function() {
                         gEData.RightMenu.data.show = false;
                         return m.redraw();
                       }
+                    },
+                    {
+                      name: "隐藏/显示",
+                      click: function() {
+                        return gEData.divList.hideOrShow();
+                      }
+                    },
+                    {
+                      name: "锁定/解锁",
+                      click: function() {
+                        return gEData.divList.lockOrUnlock();
+                      }
                     }
                   ];
                   e.preventDefault();
@@ -291,52 +303,57 @@ export default function() {
             oncreate: ({dom}) => {
               preDiv.dom = dom;
               //右键菜单
-              dom.addEventListener("contextmenu",
-        function(e) {
-                gEData.RightMenu.data.show = true;
-                gEData.rightMenuTop = e.clientY;
-                gEData.rightMenuLeft = e.clientX;
+              /*
+              dom.addEventListener "contextmenu",(e)->
+                gEData.RightMenu.data.show = true
+                gEData.rightMenuTop = e.clientY
+                gEData.rightMenuLeft = e.clientX
                 gEData.RightMenu.data.items = [
                   {
-                    name: "上移一层",
-                    click: function() {
-                      return gEData.divList.changeZIndexSelectedItems(5);
-                    }
-                  },
-                  {
-                    name: "下移一层",
-                    click: function() {
-                      return gEData.divList.changeZIndexSelectedItems(-5);
-                    }
-                  },
-                  {
-                    name: "编组",
-                    click: function() {
-                      gEData.divList.becomeGroup();
-                      return gEData.RightMenu.data.show = false;
-                    }
-                  },
-                  {
-                    name: "拆散",
-                    click: function() {
-                      gEData.divList.exitGroup();
-                      return gEData.RightMenu.data.show = false;
-                    }
-                  },
-                  {
-                    name: "删除",
-                    click: function() {
-                      gEData.divList.delSelectedItems();
-                      gEData.RightMenu.data.show = false;
-                      return m.redraw();
-                    }
+                    name:"上移一层"
+                    click:->
+                      gEData.divList.changeZIndexSelectedItems 5
                   }
-                ];
-                return e.preventDefault();
-              },
-        {
-                passive: false
-              });
+                  {
+                    name:"下移一层"
+                    click:->
+                      gEData.divList.changeZIndexSelectedItems -5
+                  }
+                  {
+                    name:"编组"
+                    click:->
+                      gEData.divList.becomeGroup()
+                      gEData.RightMenu.data.show = false
+                  }
+                  {
+                    name:"拆散"
+                    click:->
+                      gEData.divList.exitGroup()
+                      gEData.RightMenu.data.show = false
+
+                  }
+                  {
+                    name:"删除"
+                    click:->
+                      gEData.divList.delSelectedItems()                
+                      gEData.RightMenu.data.show = false
+                      m.redraw()
+                  }
+                  {
+                    name:"隐藏/显示"
+                    click:->
+                      gEData.divList.hideOrShow()
+                  }
+                  {
+                    name:"锁定/解锁"
+                    click:->
+                      gEData.divList.lockOrUnlock()
+                  }
+                ]
+                e.preventDefault()
+              ,
+                passive:false
+              */
               dom.addEventListener("click",
         function(e) {
                 return e.stopPropagation();
@@ -431,6 +448,7 @@ export default function() {
                     preDiv.x = gEData.getBoxX(preDiv.x);
                     return preDiv.y = gEData.getBoxY(preDiv.y);
                   });
+                  gEData.divList.updateGroup(); //更新组
                   m.redraw();
                   gEData.divList.record(); //存储记录
                   document.removeEventListener("mousemove",
@@ -452,7 +470,7 @@ export default function() {
               left: 0,
               top: 0,
               display: "inline-block",
-              opacity: gEData.divList.isInGroup(preDiv) ? 1 : 0.5,
+              opacity: preDiv.hideState ? "0.2" : preDiv.lockState ? "0.8" : gEData.divList.isInGroup(preDiv) ? 1 : 0.5,
               //translate:"#{preDiv.x}px #{preDiv.y}px"
               transform: `translate(${preDiv.x}px,${preDiv.y}px)`,
               width: `${preDiv.imgW}px`,
@@ -461,7 +479,8 @@ export default function() {
               backgroundPosition: `-${preDiv.imgX}px -${preDiv.imgY}px`,
               backgroundRepeat: "no-repeat",
               boxSizing: "border-box",
-              pointerEvents: gEData.mouseState === "pen" ? "none" : gEData.divList.isInGroup(preDiv) ? "auto" : "none",
+              pointerEvents: gEData.mouseState === "pen" ? "none" : preDiv.lockState || preDiv.hideState ? "none" : gEData.divList.isInGroup(preDiv) ? "auto" : "none",
+              userSelect: "none",
               border: preDiv.hasBorder === 1 ? `0.2rem solid ${getColor("yellow").back}` : preDiv.hasBorder === 2 ? `0.2rem solid ${getColor("green").back}` : void 0
             }
           },

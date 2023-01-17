@@ -199,11 +199,6 @@ export default
               document.removeEventListener "mousemove",fnMove
               document.removeEventListener "mouseup",fnUp
 
-              
-
-
-            
-
 
       ,[
         m "img",
@@ -229,7 +224,7 @@ export default
             background:"rgba(255,200,50,0.5)"
             border:"2px solid white"
             boxSizing:"border-box"
-            pointerEvents: "none" 
+            pointerEvents: "none"
             #transition:"0.2s all"
       ]
 
@@ -272,7 +267,20 @@ export default
               maginTop:0
               borderRadius:"0 0 1rem 1rem"
           ,"添加素材"
+
+
         ]
+
+        m Box,
+          isBtn:yes
+          color:"red"
+          style:
+            maginTop:0
+            borderRadius:"0 0 1rem 1rem"
+          onclick:=>
+            gEData.tilesetUrl = "./statics/green/tileset/prohibit.png"
+        ,"通行"
+
         gEData.tilesets.map (tileset,index)=>
           m Box,
             isBtn:yes
