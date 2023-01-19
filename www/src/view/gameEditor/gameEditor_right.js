@@ -7,99 +7,126 @@ import getColor from "../help/getColor";
 
 import Paper from "./gameEditor_paper";
 
-export default {
-  view: function() {
-    return m("", {
-      style: {
-        width: "100%",
-        height: "100vh",
-        overflow: "auto"
-      }
-    }, [
-      m("",
-      {
+export default function() {
+  var fnDown, fnMove, fnUp, fnWheel, x1, x2, y1, y2;
+  fnDown = fnMove = fnUp = fnWheel = null;
+  x1 = y1 = x2 = y2 = null;
+  return {
+    view: function() {
+      return m("", {
         style: {
-          position: "relative",
-          background: "#eee"
+          width: "100%",
+          height: "100vh",
+          overflow: "auto"
         }
-      },
-      [
-        //画布
-        m(Paper),
-        //绘图
-        gEData.mouseState === "pen" ? m("",
-        {
-          style: {
-            position: "absolute",
-            left: 0,
-            top: 0,
-            //translate:"#{gEData.pen.x}px #{gEData.pen.y}px"
-            transform: `translate(${gEData.pen.x}px,${gEData.pen.y}px)`,
-            width: `${gEData.choiseBox.w}px`,
-            height: `${gEData.choiseBox.h}px`,
-            backgroundColor: "rgba(200,255,50,0.5)",
-            backgroundImage: `url(${gEData.tilesetUrl})`,
-            backgroundPosition: `-${gEData.choiseBox.x}px -${gEData.choiseBox.y}px`,
-            backgroundRepeat: "no-repeat",
-            border: "2px solid white",
-            boxSizing: "border-box",
-            pointerEvents: "none",
-            //transition:"0.1s all"
-            zIndex: "999999"
-          }
-        }) : void 0,
-        //框选
+      }, [
         m("",
         {
           style: {
-            position: "absolute",
-            left: 0,
-            top: 0,
-            //translate:"#{gEData.choiseBox2.x}px #{gEData.choiseBox2.y}px"
-            transform: `translate(${gEData.choiseBox2.x}px,${gEData.choiseBox2.y}px)`,
-            width: `${gEData.choiseBox2.w}px`,
-            height: `${gEData.choiseBox2.h}px`,
-            backgroundColor: "rgba(255,255,255,0.2)",
-            border: gEData.choiseBox2.w > 0 || gEData.choiseBox2.h > 0 ? "2px solid #ccc" : void 0,
-            boxSizing: "border-box",
-            pointerEvents: "none",
-            //transition:"0.2s all"
-            zIndex: "999999"
-          }
-        }),
-        //右键菜单
-        m(gEData.RightMenu,
+            position: "relative",
+            background: "#eee"
+          },
+          oncreate: function({dom}) {
+            //鼠标移动画布
+            if (!fnDown) {
+              dom.addEventListener("mousedown",
+        fnDown = (e) => {
+                if (e.button !== 1) {
+                  return;
+                }
+                x1 = e.clientX;
+                y1 = e.clientY;
+                if (!fnMove) {
+                  dom.addEventListener("mousemove",
+        fnMove = (e) => {
+                    var disX,
+        disY;
+                    x2 = e.clientX;
+                    y2 = e.clientY;
+                    disX = x2 - x1;
+                    disY = y2 - y1;
+                    gEData.paper.x += disX;
+                    gEData.paper.y += disY;
+                    x1 = x2;
+                    y1 = y2;
+                    return m.redraw();
+                  });
+                }
+                if (!fnUp) {
+                  return dom.addEventListener("mouseup",
+        fnUp = (e) => {
+                    if (e.button !== 1) {
+                      return;
+                    }
+                    fnMove = dom.removeEventListener("mousemove",
+        fnMove);
+                    return fnUp = dom.removeEventListener("mouseup",
+        fnUp);
+                  });
+                }
+              });
+            }
+            if (!fnWheel) {
+              return dom.addEventListener("wheel",
+        fnWheel = function(e) {
+                var ref,
+        scale;
+                if (!(gEData.downkeys[0] === 91 || gEData.downkeys[0] === 93)) {
+                  return;
+                }
+                scale = -e.deltaY / 1000;
+                console.log(scale);
+                if ((0.005 < (ref = gEData.paper.scale + scale) && ref < 20)) {
+                  gEData.paper.scale += scale;
+                }
+                m.redraw();
+                return e.preventDefault();
+              },
         {
-          show: false,
-          style: {
-            position: "fixed",
-            top: gEData.rightMenuTop - 20 + "px",
-            left: gEData.rightMenuLeft - 20 + "px",
-            zIndex: 99999,
-            transition: "all 0.5s ease"
+                passive: false
+              });
+            }
           }
         },
         [
-          gEData.RightMenu.data.items.map((item) => {
-            return m(Box,
+          //画布
+          m(Paper),
+          //绘图
+
+          //右键菜单
+          m(gEData.RightMenu,
           {
-              isBtn: true,
-              oncreate: function({dom}) {
-                return dom.addEventListener("click",
-          function(e) {
-                  item.click(e);
-                  m.redraw();
-                  return e.stopPropagation();
-                },
-          {
-                  passive: false
-                });
-              }
-            },
-          item.name);
-          })
+            show: false,
+            style: {
+              position: "fixed",
+              top: gEData.rightMenuTop - 20 + "px",
+              left: gEData.rightMenuLeft - 20 + "px",
+              zIndex: 99999,
+              transition: "all 0.5s ease"
+            }
+          },
+          [
+            gEData.RightMenu.data.items.map((item) => {
+              return m(Box,
+            {
+                isBtn: true,
+                oncreate: function({dom}) {
+                  return dom.addEventListener("click",
+            function(e) {
+                    item.click(e);
+                    m.redraw();
+                    return e.stopPropagation();
+                  },
+            {
+                    passive: false
+                  });
+                }
+              },
+            item.name);
+            })
+          ])
         ])
-      ])
-    ]);
-  }
+      ]);
+    }
+  };
 };

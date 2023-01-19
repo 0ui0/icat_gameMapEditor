@@ -20,9 +20,21 @@ export default function() {
     view: function() {
       return m("#paper", {
         oncreate: ({dom}) => {
-          var dir, fnOver, img;
+          var dir, fnOver, img, paperRect;
           dir = "";
           img = null;
+          paperRect = {
+            data: null,
+            update: function() {
+              return this.data = dom.getBoundingClientRect();
+            },
+            getMousePaperSite: function(mouseEvent) {
+              return {
+                x: (mouseEvent.clientX - this.data.x) / gEData.paper.scale,
+                y: (mouseEvent.clientY - this.data.y) / gEData.paper.scale
+              };
+            }
+          };
           if (!fnOut) {
             dom.addEventListener("mouseout", fnOut = function(e) {
               gEData.pen.show = false;
@@ -43,8 +55,11 @@ export default function() {
           if (!fnOver) {
             return dom.addEventListener("mouseover", fnOver = function(e1) {
               var x1, y1;
-              x1 = e1.offsetX;
-              y1 = e1.offsetY;
+              paperRect.update();
+              ({
+                x: x1,
+                y: y1
+              } = paperRect.getMousePaperSite(e1));
               if (gEData.mouseState === "pen") {
                 gEData.pen.show = true;
               } else {
@@ -54,11 +69,14 @@ export default function() {
               if (!fnMove) {
                 dom.addEventListener("mousemove", fnMove = function(e2) {
                   var x2, y2;
-                  if (gEData.mouseState !== "pen") {
+                  if (gEData.mouseState !== "pen") { //画笔跟随
                     return;
                   }
-                  x2 = e2.offsetX;
-                  y2 = e2.offsetY;
+                  paperRect.update();
+                  ({
+                    x: x2,
+                    y: y2
+                  } = paperRect.getMousePaperSite(e2));
                   gEData.pen.x = gEData.getBoxX(x2);
                   gEData.pen.y = gEData.getBoxY(y2);
                   return m.redraw();
@@ -72,12 +90,15 @@ export default function() {
                     return;
                   }
                   //console.log "down"
-                  if (gEData.mouseState !== "pen") {
+                  if (gEData.mouseState !== "pen") { //画笔绘制按下
                     return;
                   }
-                  x3 = e3.offsetX;
-                  y3 = e3.offsetY;
-                  if (gEData.autoDraw) {
+                  paperRect.update();
+                  ({
+                    x: x3,
+                    y: y3
+                  } = paperRect.getMousePaperSite(e3));
+                  if (gEData.autoDraw) { //自动元件
                     autoDraw(x1, y1, x3, y3, true);
                     //=======
                     m.redraw();
@@ -97,11 +118,14 @@ export default function() {
                   if (!fnDown1_move) {
                     dom.addEventListener("mousemove", fnDown1_move = function(e4) {
                       var x4, y4;
-                      if (gEData.mouseState !== "pen") {
+                      if (gEData.mouseState !== "pen") { //画笔绘制跟随
                         return;
                       }
-                      x4 = e4.offsetX;
-                      y4 = e4.offsetY;
+                      paperRect.update();
+                      ({
+                        x: x4,
+                        y: y4
+                      } = paperRect.getMousePaperSite(e4));
                       if (gEData.autoDraw) {
                         return autoDraw(x3, y3, x4, y4);
                       } else {
@@ -151,7 +175,6 @@ export default function() {
               //框选器
               if (!fnDown2) {
                 dom.addEventListener("mousedown", fnDown2 = function(e3) {
-                  var domX, domY;
                   if (e3.button !== 0) {
                     return;
                   }
@@ -163,10 +186,11 @@ export default function() {
                       return preDiv.cancelSelect();
                     });
                   }
-                  x1 = e3.clientX;
-                  y1 = e3.clientY;
-                  domX = dom.getBoundingClientRect().x;
-                  domY = dom.getBoundingClientRect().y;
+                  paperRect.update();
+                  ({
+                    x: x1,
+                    y: y1
+                  } = paperRect.getMousePaperSite(e3));
                   gEData.choiseBox2.x = gEData.choiseBox2.x + gEData.choiseBox2.w;
                   gEData.choiseBox2.y = gEData.choiseBox2.y + gEData.choiseBox2.h;
                   gEData.choiseBox2.w = 0;
@@ -179,22 +203,25 @@ export default function() {
                       if (gEData.mouseState !== "mouse") {
                         return;
                       }
-                      x2 = e4.clientX;
-                      y2 = e4.clientY;
+                      paperRect.update();
+                      ({
+                        x: x2,
+                        y: y2
+                      } = paperRect.getMousePaperSite(e4));
                       disX = x2 - x1;
                       disY = y2 - y1;
                       if (disX > 0) {
-                        gEData.choiseBox2.x = x1 - domX;
+                        gEData.choiseBox2.x = x1;
                         gEData.choiseBox2.w = Math.abs(disX);
                       } else {
-                        gEData.choiseBox2.x = x2 - domX;
+                        gEData.choiseBox2.x = x2;
                         gEData.choiseBox2.w = Math.abs(disX);
                       }
                       if (disY > 0) {
-                        gEData.choiseBox2.y = y1 - domY;
+                        gEData.choiseBox2.y = y1;
                         gEData.choiseBox2.h = Math.abs(disY);
                       } else {
-                        gEData.choiseBox2.y = y2 - domY;
+                        gEData.choiseBox2.y = y2;
                         gEData.choiseBox2.h = Math.abs(disY);
                       }
                       return m.redraw();
@@ -290,9 +317,12 @@ export default function() {
           position: "relative",
           background: "#fff",
           overflow: "hidden",
-          border: "0.1rem solid #aaa"
+          border: "0.1rem solid #aaa",
+          transform: `translate(${gEData.paper.x}px,${gEData.paper.y}px) scale(${gEData.paper.scale})`
         }
       }, [
+        //left:"100px"
+        //top:"100px"
         gEData.divList.data.map((preDiv,
         index) => {
           return m("",
@@ -302,58 +332,6 @@ export default function() {
             "data-linkid": preDiv.linkid,
             oncreate: ({dom}) => {
               preDiv.dom = dom;
-              //右键菜单
-              /*
-              dom.addEventListener "contextmenu",(e)->
-                gEData.RightMenu.data.show = true
-                gEData.rightMenuTop = e.clientY
-                gEData.rightMenuLeft = e.clientX
-                gEData.RightMenu.data.items = [
-                  {
-                    name:"上移一层"
-                    click:->
-                      gEData.divList.changeZIndexSelectedItems 5
-                  }
-                  {
-                    name:"下移一层"
-                    click:->
-                      gEData.divList.changeZIndexSelectedItems -5
-                  }
-                  {
-                    name:"编组"
-                    click:->
-                      gEData.divList.becomeGroup()
-                      gEData.RightMenu.data.show = false
-                  }
-                  {
-                    name:"拆散"
-                    click:->
-                      gEData.divList.exitGroup()
-                      gEData.RightMenu.data.show = false
-
-                  }
-                  {
-                    name:"删除"
-                    click:->
-                      gEData.divList.delSelectedItems()                
-                      gEData.RightMenu.data.show = false
-                      m.redraw()
-                  }
-                  {
-                    name:"隐藏/显示"
-                    click:->
-                      gEData.divList.hideOrShow()
-                  }
-                  {
-                    name:"锁定/解锁"
-                    click:->
-                      gEData.divList.lockOrUnlock()
-                  }
-                ]
-                e.preventDefault()
-              ,
-                passive:false
-              */
               dom.addEventListener("click",
         function(e) {
                 return e.stopPropagation();
@@ -378,6 +356,9 @@ export default function() {
         ref,
         x1,
         y1;
+                if (e1.button !== 0) {
+                  return;
+                }
                 e1.stopPropagation();
                 x1 = e1.clientX;
                 y1 = e1.clientY;
@@ -425,8 +406,8 @@ export default function() {
                   }
                   x2 = e2.clientX;
                   y2 = e2.clientY;
-                  disX = x2 - x1;
-                  disY = y2 - y1;
+                  disX = (x2 - x1) / gEData.paper.scale;
+                  disY = (y2 - y1) / gEData.paper.scale;
                   //平移被框选元素
                   gEData.divList.translateSelectedItems(disX,
         disY);
@@ -439,6 +420,9 @@ export default function() {
                 });
                 return document.addEventListener("mouseup",
         fnUp = function(e3) {
+                  if (e1.button !== 0) {
+                    return;
+                  }
                   e3.stopPropagation();
                   if (!preDiv.hasBorder) {
                     return;
@@ -496,7 +480,47 @@ export default function() {
             },
             "层级：" + preDiv.zIndex) : void 0
           ]);
-        })
+        }),
+        //框选
+        m("",
+        {
+          style: {
+            position: "absolute",
+            left: 0,
+            top: 0,
+            //translate:"#{gEData.choiseBox2.x}px #{gEData.choiseBox2.y}px"
+            transform: `translate(${gEData.choiseBox2.x}px,${gEData.choiseBox2.y}px)`,
+            width: `${gEData.choiseBox2.w}px`,
+            height: `${gEData.choiseBox2.h}px`,
+            backgroundColor: "rgba(255,255,255,0.2)",
+            border: gEData.choiseBox2.w > 0 || gEData.choiseBox2.h > 0 ? "2px solid #ccc" : void 0,
+            boxSizing: "border-box",
+            pointerEvents: "none",
+            //transition:"0.2s all"
+            zIndex: "999999"
+          }
+        }),
+        gEData.mouseState === "pen" ? m("", //绘图器
+        {
+          style: {
+            position: "absolute",
+            left: 0,
+            top: 0,
+            //translate:"#{gEData.pen.x}px #{gEData.pen.y}px"
+            transform: `translate(${gEData.pen.x}px,${gEData.pen.y}px)`,
+            width: `${gEData.choiseBox.w}px`,
+            height: `${gEData.choiseBox.h}px`,
+            backgroundColor: "rgba(200,255,50,0.5)",
+            backgroundImage: `url(${gEData.tilesetUrl})`,
+            backgroundPosition: `-${gEData.choiseBox.x}px -${gEData.choiseBox.y}px`,
+            backgroundRepeat: "no-repeat",
+            border: "2px solid white",
+            boxSizing: "border-box",
+            pointerEvents: "none",
+            //transition:"0.1s all"
+            zIndex: "999999"
+          }
+        }) : void 0
       ]);
     }
   };

@@ -5,10 +5,12 @@ import getColor from "../help/getColor"
 import Paper from "./gameEditor_paper"
 
 
-export default
-  
+export default ->
+  fnDown = fnMove = fnUp = fnWheel = null
+  x1 = y1 = x2 = y2 = null
 
   view:->
+
     m "",
       style:
         width:"100%"
@@ -20,50 +22,52 @@ export default
         style:
           position:"relative"
           background:"#eee"
-      ,[
+        oncreate:({dom})->
+          #鼠标移动画布
+          unless fnDown
+            dom.addEventListener "mousedown",fnDown = (e)=>
+              if e.button isnt 1
+                return
+              x1 = e.clientX
+              y1 = e.clientY
 
+              unless fnMove
+                dom.addEventListener "mousemove",fnMove = (e)=>
+
+                  x2 = e.clientX
+                  y2 = e.clientY
+                  disX = x2-x1
+                  disY = y2-y1
+                  gEData.paper.x += disX
+                  gEData.paper.y += disY
+                  x1 = x2
+                  y1 = y2
+                  m.redraw()
+              
+              unless fnUp
+                dom.addEventListener "mouseup",fnUp =(e)=>
+                  if e.button isnt 1
+                    return
+                  fnMove = dom.removeEventListener "mousemove",fnMove
+                  fnUp = dom.removeEventListener "mouseup",fnUp
+
+          unless fnWheel
+            dom.addEventListener "wheel",fnWheel = (e)->
+              unless gEData.downkeys[0] is 91 or gEData.downkeys[0] is 93
+                return
+              scale = -e.deltaY/1000
+              console.log scale
+              if 0.005 < gEData.paper.scale + scale < 20
+                gEData.paper.scale +=scale
+              m.redraw()
+              e.preventDefault()
+            ,
+              passive:false
+      ,[
         #画布
         m Paper
-
         #绘图
-        if gEData.mouseState is "pen"
-          m "",
-            style:
-              position:"absolute"
-              left:0
-              top:0
-              #translate:"#{gEData.pen.x}px #{gEData.pen.y}px"
-              transform:"translate(#{gEData.pen.x}px,#{gEData.pen.y}px)"
-              width:"#{gEData.choiseBox.w}px"
-              height:"#{gEData.choiseBox.h}px"
-              backgroundColor:"rgba(200,255,50,0.5)"
-              backgroundImage:"url(#{gEData.tilesetUrl})"
-              backgroundPosition:"-#{gEData.choiseBox.x}px -#{gEData.choiseBox.y}px"
-              backgroundRepeat:"no-repeat"
-              border:"2px solid white"
-              boxSizing:"border-box"
-              pointerEvents: "none"
-              #transition:"0.1s all"
-              zIndex:"999999"
-
-        #框选
         
-        m "",
-          style:
-            position:"absolute"
-            left:0
-            top:0
-            #translate:"#{gEData.choiseBox2.x}px #{gEData.choiseBox2.y}px"
-            transform:"translate(#{gEData.choiseBox2.x}px,#{gEData.choiseBox2.y}px)"
-            width:"#{gEData.choiseBox2.w}px"
-            height:"#{gEData.choiseBox2.h}px"
-            backgroundColor:"rgba(255,255,255,0.2)"
-            border:if gEData.choiseBox2.w > 0 or gEData.choiseBox2.h > 0
-              "2px solid #ccc"
-            boxSizing:"border-box"
-            pointerEvents: "none"
-            #transition:"0.2s all"
-            zIndex:"999999"
 
         #右键菜单
         m gEData.RightMenu,

@@ -14,6 +14,16 @@ export default ->
         dir = ""
         img = null
 
+        paperRect =
+          data:null
+          update:->
+            @data = dom.getBoundingClientRect()
+          getMousePaperSite:(mouseEvent)->
+            return {
+              x:(mouseEvent.clientX - @data.x)/gEData.paper.scale
+              y:(mouseEvent.clientY - @data.y)/gEData.paper.scale
+            }
+
         unless fnOut
           dom.addEventListener "mouseout",fnOut = (e)->
             gEData.pen.show = false
@@ -34,23 +44,33 @@ export default ->
         unless fnOver
           dom.addEventListener "mouseover",fnOver = (e1)->
 
-            x1 = e1.offsetX
-            y1 = e1.offsetY
+            paperRect.update()
+
+            {
+              x:x1
+              y:y1
+            } = paperRect.getMousePaperSite(e1)
+
+
             if gEData.mouseState is "pen"
               gEData.pen.show = true
             else
               gEData.pen.show = false
+
             m.redraw()
 
             unless fnMove
               dom.addEventListener "mousemove",fnMove = (e2)->
-                if gEData.mouseState isnt "pen"
+                if gEData.mouseState isnt "pen" #画笔跟随
                   return
-                x2 = e2.offsetX
-                y2 = e2.offsetY
+                
+                paperRect.update()
+                
+                {x:x2,y:y2} = paperRect.getMousePaperSite(e2)
 
                 gEData.pen.x = gEData.getBoxX x2
                 gEData.pen.y = gEData.getBoxY y2
+
                 m.redraw()
 
             #绘图器
@@ -60,19 +80,18 @@ export default ->
                 if e3.button isnt 0
                   return
                 #console.log "down"
-                if gEData.mouseState isnt "pen"
+                if gEData.mouseState isnt "pen" #画笔绘制按下
                   return
-                x3 = e3.offsetX
-                y3 = e3.offsetY
+                
+                paperRect.update()
+                {x:x3,y:y3} = paperRect.getMousePaperSite(e3)
 
-                if gEData.autoDraw
+                if gEData.autoDraw #自动元件
 
                   autoDraw(x1,y1,x3,y3,true)
                   #=======
 
                   m.redraw()
-
-
 
                 else
 
@@ -91,11 +110,12 @@ export default ->
                 
                 unless fnDown1_move
                   dom.addEventListener "mousemove",fnDown1_move = (e4)->
-                    if gEData.mouseState isnt "pen"
+                    if gEData.mouseState isnt "pen" #画笔绘制跟随
                       return
 
-                    x4 = e4.offsetX
-                    y4 = e4.offsetY
+                    paperRect.update()
+                    {x:x4,y:y4} = paperRect.getMousePaperSite(e4)
+
                       
                     if gEData.autoDraw
                       autoDraw(x3,y3,x4,y4)
@@ -155,11 +175,9 @@ export default ->
                   gEData.divList.data.forEach (preDiv)=>
                     preDiv.cancelSelect()
 
-                x1 = e3.clientX
-                y1 = e3.clientY
+                paperRect.update()
+                {x:x1,y:y1} = paperRect.getMousePaperSite(e3)
 
-                domX = dom.getBoundingClientRect().x
-                domY = dom.getBoundingClientRect().y
 
                 gEData.choiseBox2.x = gEData.choiseBox2.x + gEData.choiseBox2.w
                 gEData.choiseBox2.y = gEData.choiseBox2.y + gEData.choiseBox2.h
@@ -174,24 +192,26 @@ export default ->
                     
                     if gEData.mouseState isnt "mouse"
                       return
-                    x2 = e4.clientX
-                    y2 = e4.clientY
+
+
+                    paperRect.update()
+                    {x:x2,y:y2} = paperRect.getMousePaperSite(e4)
                     
 
                     disX = x2-x1
                     disY = y2-y1
 
                     if disX > 0
-                      gEData.choiseBox2.x = x1 - domX
+                      gEData.choiseBox2.x = x1
                       gEData.choiseBox2.w = Math.abs disX
                     else
-                      gEData.choiseBox2.x = x2 - domX
+                      gEData.choiseBox2.x = x2
                       gEData.choiseBox2.w = Math.abs disX
                     if disY > 0
-                      gEData.choiseBox2.y = y1 - domY
+                      gEData.choiseBox2.y = y1
                       gEData.choiseBox2.h = Math.abs disY
                     else
-                      gEData.choiseBox2.y = y2 - domY
+                      gEData.choiseBox2.y = y2
                       gEData.choiseBox2.h = Math.abs disY
 
 
@@ -286,6 +306,9 @@ export default ->
         background:"#fff"
         overflow:"hidden"
         border:"0.1rem solid #aaa"
+        transform:"translate(#{gEData.paper.x}px,#{gEData.paper.y}px) scale(#{gEData.paper.scale})"
+        #left:"100px"
+        #top:"100px"
     ,[
       
       gEData.divList.data.map  (preDiv,index)=>
@@ -296,58 +319,7 @@ export default ->
           "data-linkid":preDiv.linkid
           oncreate:({dom})=>
             preDiv.dom = dom
-            #右键菜单
-            ###
-            dom.addEventListener "contextmenu",(e)->
-              gEData.RightMenu.data.show = true
-              gEData.rightMenuTop = e.clientY
-              gEData.rightMenuLeft = e.clientX
-              gEData.RightMenu.data.items = [
-                {
-                  name:"上移一层"
-                  click:->
-                    gEData.divList.changeZIndexSelectedItems 5
-                }
-                {
-                  name:"下移一层"
-                  click:->
-                    gEData.divList.changeZIndexSelectedItems -5
-                }
-                {
-                  name:"编组"
-                  click:->
-                    gEData.divList.becomeGroup()
-                    gEData.RightMenu.data.show = false
-                }
-                {
-                  name:"拆散"
-                  click:->
-                    gEData.divList.exitGroup()
-                    gEData.RightMenu.data.show = false
-
-                }
-                {
-                  name:"删除"
-                  click:->
-                    gEData.divList.delSelectedItems()                
-                    gEData.RightMenu.data.show = false
-                    m.redraw()
-                }
-                {
-                  name:"隐藏/显示"
-                  click:->
-                    gEData.divList.hideOrShow()
-                }
-                {
-                  name:"锁定/解锁"
-                  click:->
-                    gEData.divList.lockOrUnlock()
-                }
-              ]
-              e.preventDefault()
-            ,
-              passive:false
-            ###
+            
 
             dom.addEventListener "click",(e)->
               e.stopPropagation()
@@ -364,6 +336,8 @@ export default ->
 
             
             dom.addEventListener "mousedown",(e1)->
+              if e1.button isnt 0
+                return
               e1.stopPropagation()
               x1 = e1.clientX
               y1 = e1.clientY
@@ -405,8 +379,8 @@ export default ->
                 x2 = e2.clientX
                 y2 = e2.clientY
 
-                disX = x2-x1
-                disY = y2-y1
+                disX = (x2-x1)/gEData.paper.scale
+                disY = (y2-y1)/gEData.paper.scale
 
                 #平移被框选元素
                 gEData.divList.translateSelectedItems disX,disY
@@ -417,6 +391,8 @@ export default ->
               ,
                 passive:false
               document.addEventListener "mouseup",fnUp = (e3)->
+                if e1.button isnt 0
+                  return
                 e3.stopPropagation()
                 unless preDiv.hasBorder
                   return
@@ -489,4 +465,57 @@ export default ->
             ,"层级："+preDiv.zIndex
         ]
 
+
+
+
+
+
+
+
+
+
+
+
+      #框选
+        
+      m "",
+        style:
+          position:"absolute"
+          left:0
+          top:0
+          #translate:"#{gEData.choiseBox2.x}px #{gEData.choiseBox2.y}px"
+          transform:"translate(#{gEData.choiseBox2.x}px,#{gEData.choiseBox2.y}px)"
+          width:"#{gEData.choiseBox2.w}px"
+          height:"#{gEData.choiseBox2.h}px"
+          backgroundColor:"rgba(255,255,255,0.2)"
+          border:if gEData.choiseBox2.w > 0 or gEData.choiseBox2.h > 0
+            "2px solid #ccc"
+          boxSizing:"border-box"
+          pointerEvents: "none"
+          #transition:"0.2s all"
+          zIndex:"999999"
+
+
+
+    
+      if gEData.mouseState is "pen" #绘图器
+        m "",
+          style:
+            position:"absolute"
+            left:0
+            top:0
+            #translate:"#{gEData.pen.x}px #{gEData.pen.y}px"
+            transform:"translate(#{gEData.pen.x}px,#{gEData.pen.y}px)"
+            width:"#{gEData.choiseBox.w}px"
+            height:"#{gEData.choiseBox.h}px"
+            backgroundColor:"rgba(200,255,50,0.5)"
+            backgroundImage:"url(#{gEData.tilesetUrl})"
+            backgroundPosition:"-#{gEData.choiseBox.x}px -#{gEData.choiseBox.y}px"
+            backgroundRepeat:"no-repeat"
+            border:"2px solid white"
+            boxSizing:"border-box"
+            pointerEvents: "none"
+            #transition:"0.1s all"
+            zIndex:"999999"
+    
     ]

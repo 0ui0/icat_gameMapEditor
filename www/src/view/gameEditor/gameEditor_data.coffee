@@ -158,3 +158,8 @@ export default
     ]
     selected:0
 
+  paper:
+    x:100
+    y:100
+    scale:1
+
