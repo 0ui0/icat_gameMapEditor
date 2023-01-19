@@ -10,10 +10,15 @@ import gEData from "./gameEditor_data";
 import getColor from "../help/getColor";
 
 DivItem = function() {
+  var showChild;
+  showChild = false;
   return {
     view: function({attrs}) {
-      var preDiv;
+      var children, preDiv;
       preDiv = attrs.preDiv;
+      children = gEData.divList.data.filter((preDiv) => {
+        return preDiv.linkid === attrs.preDiv.id;
+      });
       return m(Box, {
         isBtn: true,
         color: preDiv.isGroup ? "yellow" : void 0,
@@ -22,14 +27,17 @@ DivItem = function() {
           padding: "0.5rem 1rem",
           borderRadius: "0.2rem",
           border: preDiv.hasBorder === 1 ? `0.2rem solid ${getColor("yellow").back}` : preDiv.hasBorder === 2 ? `0.2rem solid ${getColor("green").back}` : void 0,
-          outline: preDiv.checked ? "0.2rem solid red" : void 0
+          outline: preDiv.checked ? "0.2rem solid red" : void 0,
+          gridColumnStart: preDiv.isGroup ? 1 : void 0,
+          gridColumnEnd: preDiv.isGroup ? 5 : void 0,
+          boxShadow: "0 0 0.5rem rgba(0,0,0,0.2)",
+          borderRadius: "0.3rem"
         },
         ext: {
           onclick: (e) => {
             var fn;
             fn = (preDiv) => {
-              var children;
-              preDiv.inverse();
+              preDiv.check();
               children = gEData.divList.data.filter((preDiv1) => {
                 return preDiv1.linkid === preDiv.id;
               });
@@ -45,17 +53,39 @@ DivItem = function() {
         }
       }, [
         m("",
-        [(preDiv.isGroup ? "组：" : "") + preDiv.x + " " + preDiv.y,
-        preDiv.hideState ? "[藏]" : "",
-        preDiv.lockState ? "[锁]" : ""]),
-        gEData.divList.data.filter((preDiv) => {
-          return preDiv.linkid === attrs.preDiv.id;
-        }).map((preDiv) => {
-          return m(DivItem,
+        [
+          (preDiv.isGroup ? "组：" : ""),
+          //preDiv.x + " " + preDiv.y
+          preDiv.id.slice(0, 3),
+          preDiv.hideState ? "[藏]" : "",
+          preDiv.lockState ? "[锁]" : ""
+        ]),
+        preDiv.isGroup && children.length > 0 ? m(Tag,
         {
-            preDiv: preDiv
-          });
-        })
+          isBtn: true,
+          ext: {
+            onclick: (e) => {
+              showChild = !showChild;
+              return e.stopPropagation();
+            }
+          }
+        },
+        showChild ? "=" : "+") : void 0,
+        showChild === true ? m("",
+        {
+          style: {
+            display: "grid",
+            gridTemplateColumns: "auto auto auto"
+          }
+        },
+        [
+          children.map((preDiv) => {
+            return m(DivItem,
+          {
+              preDiv: preDiv
+            });
+          })
+        ]) : void 0
       ]);
     }
   };
@@ -75,28 +105,33 @@ export default function() {
         }
       }, [
         m("",
+        {
+          style: {
+            position: "sticky",
+            top: 0,
+            background: "rgba(255,255,255)"
+          }
+        },
         [
-          m("",
+          gEData.layer.menu.map((item,
+          index) => {
+            return m("",
           {
-            style: {
-              display: "inline-block",
-              margin: "1rem",
-              fontSize: "1.8rem",
-              color: "#aaa"
-            }
-          },
-          "图层"),
-          m("",
-          {
-            style: {
-              display: "inline-block",
-              margin: "1rem",
-              fontSize: "1.8rem",
-              color: "#aaa"
-            }
-          },
-          "地图"),
-          m("",
+              style: {
+                display: "inline-block",
+                margin: "1rem",
+                fontSize: index === gEData.layer.selected ? "1.8rem" : "1.6rem",
+                color: "#aaa",
+                cursor: "pointer",
+                transition: "0.5s all ease"
+              },
+              onclick: () => {
+                return gEData.layer.selected = index;
+              }
+            },
+          item.name);
+          }),
+          gEData.layer.selected === 0 ? m("",
           [
             m(Tag,
             {
@@ -124,12 +159,13 @@ export default function() {
               }
             },
             "隐藏/显示")
-          ])
+          ]) : void 0
         ]),
-        m("",
+        gEData.layer.selected === 0 ? m(".animated.fadeIn",
         {
           style: {
-            display: "flex",
+            display: "grid",
+            gridTemplateColumns: "auto auto auto",
             flexWrap: "wrap",
             background: "#fff"
           }
@@ -146,7 +182,7 @@ export default function() {
               preDiv: preDiv
             });
           })
-        ])
+        ]) : void 0
       ]);
     }
   };

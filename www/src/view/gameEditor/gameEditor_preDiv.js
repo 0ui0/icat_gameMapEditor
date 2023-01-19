@@ -22,7 +22,8 @@ export default (class {
       linkid: "",
       hideState: false,
       lockState: false,
-      checked: false
+      checked: false,
+      isGroup: false
     }) {
     var i, key, len, ref, value;
     obj.id = uuid();
@@ -48,11 +49,17 @@ export default (class {
   }
 
   select(level) { //选中
-    return this.hasBorder = level;
+    this.hasBorder = level;
+    if (!(this.lockState || this.hideState)) {
+      return this.checked = true;
+    }
   }
 
   cancelSelect() {
-    return this.hasBorder = 0;
+    this.hasBorder = 0;
+    if (!(this.lockState || this.hideState)) {
+      return this.checked = false;
+    }
   }
 
   setZIndex(zIndex) {
@@ -83,39 +90,65 @@ export default (class {
   }
 
   hide() {
-    return this.hideState = true;
+    this.hideState = true;
+    return this.hasBorder = 0;
   }
 
   show() {
-    return this.hideState = false;
+    this.hideState = false;
+    if (this.checked) {
+      return this.hasBorder = this.isGroup ? 2 : 1;
+    }
   }
 
   lock() {
-    return this.lockState = true;
+    this.lockState = true;
+    return this.hasBorder = 0;
   }
 
   unlock() {
-    return this.lockState = false;
+    this.lockState = false;
+    if (this.checked) {
+      return this.hasBorder = this.isGroup ? 2 : 1;
+    }
   }
 
   hideOrShow() {
-    return this.hideState = !this.hideState;
+    if (this.hideState) {
+      return this.show();
+    } else {
+      return this.hide();
+    }
   }
 
   lockOrUnlock() {
-    return this.lockState = !this.lockState;
+    if (this.lockState) {
+      return this.unlock();
+    } else {
+      return this.lock();
+    }
   }
 
   check() {
-    return this.checked = true;
+    this.checked = true;
+    if (!(this.lockState || this.hideState)) {
+      return this.hasBorder = this.isGroup ? 2 : 1;
+    }
   }
 
   unCheck() {
-    return this.checked = false;
+    this.checked = false;
+    if (!(this.lockState || this.hideState)) {
+      return this.hasBorder = 0;
+    }
   }
 
   inverse() {
-    return this.checked = !this.checked;
+    if (this.checked) {
+      return this.unCheck();
+    } else {
+      return this.check();
+    }
   }
 
 });

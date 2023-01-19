@@ -115,7 +115,7 @@ export default
         right:"3rem"
         top:"50%"
         transform:"translate(0,-50%)"
-        zIndex:999
+        zIndex:999999
     ,[
       m "",
         style:

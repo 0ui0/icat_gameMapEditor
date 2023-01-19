@@ -470,7 +470,7 @@ export default function() {
               left: 0,
               top: 0,
               display: "inline-block",
-              opacity: preDiv.hideState ? "0.2" : preDiv.lockState ? "0.8" : gEData.divList.isInGroup(preDiv) ? 1 : 0.5,
+              opacity: preDiv.hideState ? 0 : preDiv.lockState ? 1 : gEData.divList.isInGroup(preDiv) ? 1 : 0.5,
               //translate:"#{preDiv.x}px #{preDiv.y}px"
               transform: `translate(${preDiv.x}px,${preDiv.y}px)`,
               width: `${preDiv.imgW}px`,

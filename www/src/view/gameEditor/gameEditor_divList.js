@@ -300,9 +300,13 @@ export default DivList = class {
   }
 
   copySelectedItems() {
+    return this.copy = this.getSelectedItems();
+  }
+
+  pasteCopyedItems() {
     var idMap;
     idMap = {};
-    this.copy = this.getSelectedItems().map((preDiv) => {
+    this.copyed = this.copy.map((preDiv) => {
       var div;
       div = new PreDiv({
         ...preDiv,
@@ -314,18 +318,15 @@ export default DivList = class {
       });
       return div;
     });
-    this.getSelectedItems().forEach((preDiv, index) => {
-      idMap[preDiv.id] = this.copy[index].id;
+    this.copy.forEach((preDiv, index) => {
+      idMap[preDiv.id] = this.copyed[index].id;
       return preDiv.hasBorder = 0;
     });
-    this.copy.forEach((preDiv) => {
+    this.copyed.forEach((preDiv) => {
       return preDiv.linkid = idMap[preDiv.linkid] || "";
     });
-    return this.copy;
-  }
-
-  pasteCopyedItems() {
-    this.data = [...this.data, ...this.copy];
+    this.data = [...this.data, ...this.copyed];
+    this.copy = this.copyed;
     return this.record();
   }
 
@@ -401,6 +402,7 @@ export default DivList = class {
   }
 
   updateGroup() { //根据子元素调整组边界
+    console.log("updateGroup");
     return this.getGroups().forEach((group) => {
       var children, x, x1, y, y1, z;
       children = this.findChildrenDeep(group.id);
@@ -430,6 +432,9 @@ export default DivList = class {
   becomeGroup() {
     var group, groupId, selectedItems;
     selectedItems = this.getSelectedItems();
+    if (!(selectedItems.length > 0)) {
+      return;
+    }
     selectedItems = selectedItems.filter((preDiv) => {
       if (this.presentGroup) {
         return preDiv.linkid === this.presentGroup;
@@ -462,7 +467,7 @@ export default DivList = class {
     return this.record();
   }
 
-  findInGroup(preDiv) {
+  findInGroup(preDiv) { //递归查找组的所有元素和子元素
     var fn, output;
     if (!(preDiv instanceof PreDiv)) {
       throw new Error("要查找所属组的元素不是PreDiv的实例");
@@ -512,9 +517,25 @@ export default DivList = class {
   }
 
   isInGroup(preDiv) {
-    var ref;
+    var base, base1, name, name1, ref, ref1;
+    if (this.groupChildren == null) {
+      this.groupChildren = {};
+    }
+    if ((base = this.groupChildren)[name = this.presentGroup] == null) {
+      base[name] = this.findChildrenDeep(this.presentGroup);
+    }
+    if ((base1 = this.groupChildren)[name1 = this.presentGroup] == null) {
+      base1[name1] = [];
+    }
+    if ((ref = this.groupChildren[this.presentGroup]) != null) {
+      if (ref.timer == null) {
+        ref.timer = setTimeout(() => {
+          return this.groupChildren[this.presentGroup] = null;
+        }, 1000); //递归太卡，延迟一下
+      }
+    }
     if (this.presentGroup) {
-      if ((ref = gEData.divList.findChildrenDeep(gEData.divList.presentGroup)) != null ? ref.find((child) => {
+      if ((ref1 = this.groupChildren[this.presentGroup]) != null ? ref1.find((child) => {
         return child.id === preDiv.id;
       }) : void 0) {
         return true;
@@ -609,7 +630,12 @@ export default DivList = class {
       delete cpPreDiv.dom;
       return copyData.push(cpPreDiv);
     });
-    json = JSON.stringify(copyData);
+    json = {
+      outData: copyData,
+      canvasHeight: gEData.canvasHeight,
+      canvasWidth: gEData.canvasWidth
+    };
+    json = JSON.stringify(json);
     blob = new Blob([json]);
     aDom = document.createElement("a");
     aDom.download = `data_${Date.now()}.json`;
@@ -647,7 +673,12 @@ export default DivList = class {
                       return reader.readAsText(file);
                     }));
                     json = JSON.parse(data);
-                    if (!((ref = json[0]) != null ? ref.id : void 0)) {
+                    if (json.length) {
+                      json = {
+                        outData: json
+                      };
+                    }
+                    if (!((ref = json.outData[0]) != null ? ref.id : void 0)) {
                       throw new Error();
                     }
                   } catch (error) {
@@ -664,9 +695,29 @@ export default DivList = class {
         };
       },
       confirm: () => {
-        this.data = json.map((preDiv) => {
-          return new PreDiv({...preDiv});
+        var idMap;
+        this.data = json.outData.map((preDiv) => {
+          return new PreDiv({
+            ...preDiv,
+            divList: this
+          });
         });
+        
+        //id映射
+        idMap = {};
+        json.outData.forEach((preDiv, index) => {
+          return idMap[preDiv.id] = this.data[index].id;
+        });
+        //根据映射表修改linkid
+        this.data.forEach((preDiv, index) => {
+          return preDiv.linkid = idMap[preDiv.linkid] || "";
+        });
+        
+        //设置画布
+        if (json.canvasWidth && json.canvasHeight) {
+          gEData.canvasWidth = json.canvasWidth;
+          gEData.canvasHeight = json.canvasHeight;
+        }
         this.record();
         return void 0;
       }
@@ -710,7 +761,7 @@ export default DivList = class {
         });
       }));
       aDom = document.createElement("a");
-      aDom.download = `map_${Date.now()}.png`;
+      aDom.download = `map_${Date.now()}.jpg`;
       aDom.href = window.URL.createObjectURL(blob);
       document.body.appendChild(aDom);
       aDom.click();

@@ -241,9 +241,14 @@ export default DivList = class
 
 
   copySelectedItems:->
-    idMap = {}
     
-    @copy = @getSelectedItems().map (preDiv)=>
+    
+    @copy = @getSelectedItems()
+
+  pasteCopyedItems:->
+    idMap = {}
+
+    @copyed = @copy.map (preDiv)=>
       div = new PreDiv {
         preDiv...
         x:preDiv.x + gEData.getW()
@@ -254,21 +259,19 @@ export default DivList = class
       }
       return div
 
-    @getSelectedItems().forEach (preDiv,index)=>
-      idMap[preDiv.id] = @copy[index].id
+    @copy.forEach (preDiv,index)=>
+      idMap[preDiv.id] = @copyed[index].id
       preDiv.hasBorder = 0
 
-    @copy.forEach (preDiv)=>
+    @copyed.forEach (preDiv)=>
       preDiv.linkid = idMap[preDiv.linkid] or ""
 
-    return @copy
-
-  pasteCopyedItems:->
     @data = [
       @data...
-      @copy...
+      @copyed...
     ]
 
+    @copy = @copyed
     @record()
 
   fillRect:->
@@ -315,19 +318,26 @@ export default DivList = class
 
   findChildrenDeep:(id,index=0,childArr=[])->
     checkType arguments,["string","number?","array?"],"gameEditor.DivList.findChildrenDeep()"
+
     children = @findChildren(id)
     childArr.push(children...)
+
     children.forEach (child)=>
       @findChildrenDeep(child.id,index++,childArr)
+
     if childArr.length > 0
       return childArr
     else
       return null
 
+
+
+
   getGroups:->
     @data.filter (preDiv)=> preDiv.isGroup
   
   updateGroup:-> #根据子元素调整组边界
+    console.log "updateGroup"
     @getGroups().forEach (group)=>
       children = @findChildrenDeep group.id
       x=y=x1=y1=z=0
@@ -355,6 +365,9 @@ export default DivList = class
   becomeGroup:()->
 
     selectedItems = @getSelectedItems()
+
+    unless selectedItems.length > 0 
+      return
     
     selectedItems = selectedItems.filter (preDiv)=>
       if @presentGroup
@@ -389,7 +402,7 @@ export default DivList = class
     @updateGroup()
     @record()
   
-  findInGroup:(preDiv)->
+  findInGroup:(preDiv)-> #递归查找组的所有元素和子元素
     unless preDiv instanceof PreDiv
       throw new Error "要查找所属组的元素不是PreDiv的实例"
 
@@ -428,8 +441,16 @@ export default DivList = class
       preDiv.cancelSelect()
 
   isInGroup:(preDiv)->
+    @groupChildren ?= {}
+    @groupChildren[@presentGroup] ?= @findChildrenDeep(@presentGroup)
+    @groupChildren[@presentGroup] ?= []
+
+    @groupChildren[@presentGroup]?.timer ?= setTimeout =>
+      @groupChildren[@presentGroup] = null
+    ,1000 #递归太卡，延迟一下
+    
     if @presentGroup
-      if gEData.divList.findChildrenDeep(gEData.divList.presentGroup)?.find (child)=> child.id is preDiv.id
+      if @groupChildren[@presentGroup]?.find (child)=> child.id is preDiv.id
         return true
       else
         return false
@@ -489,7 +510,14 @@ export default DivList = class
       delete cpPreDiv.divList
       delete cpPreDiv.dom
       copyData.push cpPreDiv
-    json = JSON.stringify copyData
+    
+    json = {
+      outData:copyData
+      canvasHeight:gEData.canvasHeight
+      canvasWidth:gEData.canvasWidth
+    }
+
+    json = JSON.stringify json
     blob = new Blob [json]
 
     aDom = document.createElement "a"
@@ -516,8 +544,16 @@ export default DivList = class
                     reader.onload = ()->
                       res(reader.result)
                     reader.readAsText(file)
+
                   json = JSON.parse data
-                  unless json[0]?.id
+
+                  if json.length
+                    json = {
+                      outData:json
+                    }
+
+
+                  unless json.outData[0]?.id
                     throw new Error()
                 catch err
                   console.log err
@@ -527,10 +563,26 @@ export default DivList = class
           ]
         
       confirm:=>
-        @data = json.map (preDiv)=>
+        @data = json.outData.map (preDiv)=>
           new PreDiv {
             preDiv...
+            divList:@
           }
+        
+        #id映射
+        idMap = {}
+        json.outData.forEach (preDiv,index)=>
+          idMap[preDiv.id] = @data[index].id
+
+        #根据映射表修改linkid
+        @data.forEach (preDiv,index)=>
+          preDiv.linkid = idMap[preDiv.linkid] or ""   
+
+        #设置画布
+        if json.canvasWidth and json.canvasHeight
+          gEData.canvasWidth = json.canvasWidth
+          gEData.canvasHeight = json.canvasHeight
+
         @record()
         return undefined
 
@@ -565,7 +617,7 @@ export default DivList = class
           res(blob)
       
       aDom = document.createElement "a"
-      aDom.download = "map_#{Date.now()}.png"
+      aDom.download = "map_#{Date.now()}.jpg"
       aDom.href = window.URL.createObjectURL blob
       document.body.appendChild aDom
       aDom.click()

@@ -427,7 +427,6 @@ export default ->
                   preDiv.y = gEData.getBoxY(preDiv.y)
 
                 
-
                 gEData.divList.updateGroup() #更新组
                 m.redraw()
                 gEData.divList.record() #存储记录
@@ -446,9 +445,9 @@ export default ->
             top:0
             display:"inline-block"
             opacity:if preDiv.hideState
-              "0.2"
+              0
             else if preDiv.lockState
-              "0.8"
+              1
             else
               if gEData.divList.isInGroup(preDiv)
                 1

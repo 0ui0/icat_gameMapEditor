@@ -164,7 +164,14 @@ export default {
   autoDraw: false,
   tilesetUrl: "statics/green/tileset/tukuai.png",
   tileset: null,
-  tilesets: ["statics/green/tileset/tukuai.png"],
+  tilesets: [
+    /*
+    "statics/green/tileset/outdoor.png"
+    "statics/green/tileset/indoor.png"
+    "statics/green/tileset/wall.png"
+    */
+    "statics/green/tileset/tukuai.png"
+  ],
   canvasHeight: 1000,
   canvasWidth: 1000,
   mouseDirection: true,
@@ -202,5 +209,16 @@ export default {
   },
   rightMenuTop: 0,
   rightMenuLeft: 0,
-  divList: new DivList()
+  divList: new DivList(),
+  layer: {
+    menu: [
+      {
+        name: "图层"
+      },
+      {
+        name: "地图"
+      }
+    ],
+    selected: 0
+  }
 };

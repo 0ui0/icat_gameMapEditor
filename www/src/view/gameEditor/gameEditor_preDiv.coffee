@@ -19,6 +19,7 @@ export default class
     hideState:false
     lockState:false
     checked:false
+    isGroup:false
   })->
     obj.id = uuid()
 
@@ -37,8 +38,12 @@ export default class
       preDiv.id isnt @id
   select:(level)-> #选中
     @hasBorder = level
+    unless @lockState or @hideState
+      @checked = true
   cancelSelect:()->
     @hasBorder = 0
+    unless @lockState or @hideState
+      @checked = false
   setZIndex:(zIndex)->
     checkType arguments,["number"],"gameEditor.DivList.setZIndex()"
     @zIndex = zIndex
@@ -60,23 +65,44 @@ export default class
 
   hide:()->
     @hideState = true
+    @hasBorder = 0
   show:()->
     @hideState = false
+    if @checked
+      @hasBorder = if @isGroup then 2 else 1
   lock:()->
     @lockState = true
+    @hasBorder = 0
   unlock:()->
     @lockState = false
+    if @checked
+      @hasBorder = if @isGroup then 2 else 1
   hideOrShow:->
-    @hideState = not @hideState
+    if @hideState
+      @show()
+    else
+      @hide()
   lockOrUnlock:->
-    @lockState = not @lockState
+    if @lockState
+      @unlock()
+    else
+      @lock()
     
   check:->
     @checked = true
+    unless @lockState or @hideState
+      @hasBorder =  if @isGroup then 2 else 1
+    
   unCheck:->
     @checked = false
+    unless @lockState or @hideState
+      @hasBorder = 0
+
   inverse:->
-    @checked = not @checked
+    if @checked
+      @unCheck()
+    else
+      @check()
   
   
 

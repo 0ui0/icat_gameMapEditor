@@ -7,6 +7,8 @@ import Box from "../common/box";
 
 import getColor from "../help/getColor";
 
+import Tag from "../common/tag";
+
 export default {
   view: function() {
     return m("", {
@@ -202,7 +204,6 @@ export default {
                 m.redraw()
               ,500
               */
-              console.log("已取消");
               document.removeEventListener("mousemove",
       fnMove);
               return document.removeEventListener("mouseup",
@@ -245,6 +246,7 @@ export default {
       {
         style: {
           display: "flex",
+          alignItems: "center",
           flexWrap: "wrap",
           background: "#eee"
         }
@@ -299,40 +301,39 @@ export default {
             isBtn: true,
             style: {
               maginTop: 0,
+              marginLeft: "0.2rem",
+              marginRight: "0.2rem",
               borderRadius: "0 0 1rem 1rem"
             }
           },
-          "添加素材")
+          "添加")
         ]),
-        m(Box,
+        m(Tag,
         {
           isBtn: true,
           color: "red",
-          style: {
-            maginTop: 0,
-            borderRadius: "0 0 1rem 1rem"
+          styleExt: {
+            margin: "0.2rem"
           },
           onclick: () => {
             return gEData.tilesetUrl = "./statics/green/tileset/prohibit.png";
           }
         },
-        "通行"),
+        "0"),
         gEData.tilesets.map((tileset,
         index) => {
-          return m(Box,
+          return m(Tag,
         {
             isBtn: true,
             color: "green",
-            style: {
-              maginTop: 0,
-              borderRadius: "0 0 1rem 1rem"
+            styleExt: {
+              margin: "0.2rem"
             },
             onclick: () => {
-              gEData.tilesetUrl = tileset;
-              return console.log(gEData.tilesetUrl);
+              return gEData.tilesetUrl = tileset;
             }
           },
-        `素材${index + 1}`);
+        `${index + 1}`);
         })
       ]),
       m(Layer)

@@ -2,6 +2,7 @@ import gEData from "./gameEditor_data"
 import Layer from "./gameEditor_layer"
 import Box from "../common/box"
 import getColor from "../help/getColor"
+import Tag from "../common/tag"
 export default
   view:->
     m "",
@@ -195,7 +196,7 @@ export default
                 m.redraw()
               ,500
               ###
-              console.log "已取消"
+              
               document.removeEventListener "mousemove",fnMove
               document.removeEventListener "mouseup",fnUp
 
@@ -231,6 +232,7 @@ export default
       m "",
         style:
           display:"flex"
+          alignItems:"center"
           flexWrap:"wrap"
           background:"#eee"
       ,[
@@ -265,36 +267,34 @@ export default
             isBtn:yes
             style:
               maginTop:0
+              marginLeft:"0.2rem"
+              marginRight:"0.2rem"
               borderRadius:"0 0 1rem 1rem"
-          ,"添加素材"
+          ,"添加"
 
 
         ]
 
-        m Box,
+        m Tag,
           isBtn:yes
           color:"red"
-          style:
-            maginTop:0
-            borderRadius:"0 0 1rem 1rem"
+          styleExt:
+            margin:"0.2rem"
           onclick:=>
             gEData.tilesetUrl = "./statics/green/tileset/prohibit.png"
-        ,"通行"
+        ,"0"
 
         gEData.tilesets.map (tileset,index)=>
-          m Box,
+          m Tag,
             isBtn:yes
             color:"green"
-            style:
-              maginTop:0
-              borderRadius:"0 0 1rem 1rem"
+            styleExt:
+              margin:"0.2rem"
             onclick:=>
-              gEData.tilesetUrl = tileset
-              console.log gEData.tilesetUrl
-          
-          ,"素材#{index+1}"
+              gEData.tilesetUrl = tileset          
+          ,"#{index+1}"
 
-       
+
       ]
 
       m Layer

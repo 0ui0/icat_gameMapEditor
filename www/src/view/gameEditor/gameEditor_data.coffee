@@ -103,6 +103,11 @@ export default
   
   tileset:null
   tilesets:[
+    ###
+    "statics/green/tileset/outdoor.png"
+    "statics/green/tileset/indoor.png"
+    "statics/green/tileset/wall.png"
+    ###
     "statics/green/tileset/tukuai.png"
   ]
 
@@ -141,4 +146,15 @@ export default
   rightMenuLeft:0
 
   divList:new DivList()
+
+  layer:
+    menu:[
+      {
+        name:"图层"
+      }
+      {
+        name:"地图"
+      }
+    ]
+    selected:0
 
