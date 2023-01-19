@@ -251,6 +251,9 @@ export default
                               view:->
                                 m "",[
                                   m Box,
+                                    color:"red"
+                                  ,"画布尺寸"
+                                  m Box,
                                     isBlock:true
                                   ,"配置画布尺寸不会影响当前已经绘制好的元素，只影响导出区域"
                                   m Box,"宽#{gEData.canvasWidth}px"
@@ -265,6 +268,15 @@ export default
                                       tagName:"input[type=number]"
                                       ext:
                                         placeholder:"画布高/像素"
+                                  ]
+                                  m "",[
+                                    m Box,
+                                      color:"red"
+                                    ,"关于"
+                                    m Box,[
+                                      "©版权所有 喵宅苑/啦沐达"
+                                      m "a[href=https://www.o-o.space/#!/home/4312][target=_blank]","【交流社区】"
+                                    ]
                                   ]
                                 ]
                             confirm:->
